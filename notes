@@ -1,0 +1,16 @@
+TML_v3_n512_v0 -->
+TML_v3_n512_v1 --> Non interpolated
+
+TML_v4_n1024_v0 --> 
+TML_v4_n1024_v1 --> Non interpolated
+
+
+TML_v1_n256_v2 --> Base
+TML_v3_n512_v2 --> Interpolated
+TML_v4_n1024_v2 --> Interpolated
+TML_v5_n2048_v2 --> Interpolated
+
+TML_v1_n256_v3 --> Base
+TML_v3_n512_v3 --> Interpolated
+TML_v4_n1024_v3 --> Interpolated
+TML_v5_n2048_v3 --> Interpolated
