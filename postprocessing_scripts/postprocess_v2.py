@@ -78,11 +78,11 @@ if __name__ == '__main__':
         u1_t = np.mean(u, axis=(0,2))
         alpha = np.mean(1-(case.data[f'{time_step}']['phi_2']), axis=(0,2))
 
-        #momentum
-        integrand_m = ((alpha) * (U_g - u1_t) * (u1_t))/(U_g*U_g)
+        #Momentum Thickness
+        integrand_m = ((alpha) * (U_g - u1_t) * (u1_t))/(U_g * U_g)
         delta_theta_g.append(np.trapz(integrand_m, dx=dy))
         
-        #phi
+        #Phi Thickness
         integrand_phi = (alpha)
         nx_g_half = 512
         integrand_phi_subset = integrand_phi[:nx_g_half]
@@ -92,9 +92,8 @@ if __name__ == '__main__':
         integrand_mixing = alpha*(1-alpha)
         delta_mixing.append(np.trapz(integrand_mixing, dx=dy))
 
-    time_steps = list(range(0, 31200, 800))
-    t_normalized = list((t * dt * U_g)/delta for t in time_steps)
-
+    time_steps = list(range(0, 31200, 800))                                     #Have to grep time from top of successive log times for 
+    t_normalized = list((t * dt * U_g)/delta for t in time_steps)               #previous o/p time then perform normalization
     delta_theta_g_normalized = np.array(delta_theta_g)/delta
 
     plot_thickness(t_normalized, delta_theta_g_normalized, 'Normalized Time', 'Momentum Thickness', 'momentum_thickness.png') 
