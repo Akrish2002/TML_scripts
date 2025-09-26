@@ -110,7 +110,7 @@ def phi_thickness(alpha, nx_g_half):
     return delta_phi_g
 
 
-def mixinglayer_thickness(alpha, dy)
+def mixinglayer_thickness(alpha, dy):
     """ Computing the mixing layer thickness
     
     Args:
