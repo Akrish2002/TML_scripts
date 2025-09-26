@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor as ex
+from concurrent.futures import ProcessPoolExecutor
 from FPCSLpy.case import Case
 import numpy as np
 import os
@@ -128,6 +128,14 @@ def mixinglayer_thickness(alpha, dy)
     
 
 def case_update():
+    """
+    
+    Args:
+    
+    Return:
+    
+    """
+
     case = Case(path='./.')
 
     args = parse_args()
@@ -152,13 +160,47 @@ def case_update():
     case.update_parameters(to_update_parameters)
 
     return  nx_g, ny_g, nz_g \
-            dx, dy, dz
+            dx, dy, dz       \
+            case
+
+
+def call_cores( delta_theta_g, delta_phi_g, delta_mixing,
+                delta, U_g, dt,
+                
+                nx_g, ny_g, nz_g,
+                nx_g_half,
+                dx, dy, dz,
+                case,
+                
+                time_step):
+    """
+    
+    Args:
+    
+    Return:
+    
+    """
+
+    u, v, w  = case.data[f'{time_step}']['u'], \
+               case.data[f'{time_step}']['v'], \
+               case.data[f'{time_step}']['w']
+    u_bar = np.mean(u, axis=(0, 2))                                             #Avg along x and z since it is periodic
+    alpha = np.mean(1 - (case.data[f"{time_steps}"]["phi_2"]), axis=(0, 2))     #1 - phi_2
+    
+    delta_theta_g   = momentum_thickness(U_g, u_bar, delta_u, alpha, dy)
+    delta_phi_g     = phi_thickness(alpha, nx_g_half)
+    delta_mixing    = mixinglayer_thickness(alpha, dy)
 
 
 def main():
+    """
     
-if __name__ == "__main__":
+    Args:
+    
+    Return:
 
+    """
+    
     #Variables
     delta_theta_g   = []
     delta_phi_g     = []
@@ -167,5 +209,29 @@ if __name__ == "__main__":
     delta           = (2. * np.pi) / 100.
     U_g             = 3.1830988618379066
     dt              = 0.00025
+    cores           = 50
 
-    main()
+    (nx_g, ny_g, nz_g
+     dx, dy, dz       
+     case)             = case_update()
+
+    #For time-steps_{i}
+    time_steps = [i for i in range(0, 98000, 2000)]
+
+    with ProcessPoolExecutor(max_workers=cores) as ex: 
+        ex.submit( call_cores, 
+
+                   delta_theta_g, delta_phi_g, delta_mixing,
+                   delta, U_g, dt,
+                   
+                   nx_g, ny_g, nz_g,
+                   nx_g_half,
+                   dx, dy, dz,
+                   case,
+                   
+                   time_step) for time_step in time_steps
+ 
+ 
+if __name__ == "__main__":
+
+
