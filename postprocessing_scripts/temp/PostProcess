@@ -849,7 +849,7 @@ LAYOUT_FILE            =
 # LATEX_BIB_STYLE. To use this feature you need bibtex and perl available in the
 # search path. See also \cite for info how to create references.
 
-CITE_BIB_FILES         =
+CITE_BIB_FILES         = "./refs.bib"
 
 # The EXTERNAL_TOOL_PATH tag can be used to extend the search path (PATH
 # environment variable) so that external tools such as latex and gs can be
