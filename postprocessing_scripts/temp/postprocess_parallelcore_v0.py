@@ -106,7 +106,7 @@ def momentum_thickness(U, u_bar, delta_u, alpha, dy, delta):
 
     integrand                = ((alpha) * (U - u_bar) * (u_bar))/(delta_u * delta_u)
     delta_theta_g            = (np.trapz(integrand, dx=dy))
-    delta_theta_g_normalized = delta_theat_g / delta
+    delta_theta_g_normalized = delta_theta_g / delta
 
     return delta_theta_g_normalized
 
