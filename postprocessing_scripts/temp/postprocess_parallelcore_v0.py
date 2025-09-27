@@ -43,6 +43,7 @@ def parse_args():
                        )
     return parser.parse_args()
 
+
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     """ To grep all the required data from the CTR file
     
@@ -54,9 +55,6 @@ def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     """
     
     text = pathlib.Path(ctr_file).read_text()
-    #m   = re.search(rf"\b{st}\s*=\s*(\d+)", text)
-    #n   = int(m.group(1)) if m else None
-
     pat = re.compile(rf"\b{re.escape(st)}\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
     m = pat.search(text)
     n   = float(m.group(1)) if m else None
@@ -91,7 +89,7 @@ def plot_thickness(time_steps, delta, x_label, y_label, file_name):
     plt.close()
 
 
-def momentum_thickness(U, u_bar, delta_u, alpha, dy):
+def momentum_thickness(U, u_bar, delta_u, alpha, dy, delta):
     """ Compute momentum thickness at each timestep per \\cite{lee2025effects}.
     
     Args:
@@ -106,10 +104,11 @@ def momentum_thickness(U, u_bar, delta_u, alpha, dy):
     
     """
 
-    integrand     = ((alpha) * (U - u_bar) * (u_bar))/(delta_u * delta_u)
-    delta_theta_g = (np.trapz(integrand, dx=dy))
-    
-    return delta_theta_g
+    integrand                = ((alpha) * (U - u_bar) * (u_bar))/(delta_u * delta_u)
+    delta_theta_g            = (np.trapz(integrand, dx=dy))
+    delta_theta_g_normalized = delta_theat_g / delta
+
+    return delta_theta_g_normalized
 
 
 def phi_thickness(alpha, nx_g_half, dy):
@@ -149,11 +148,19 @@ def mixinglayer_thickness(alpha, dy):
     
 
 def case_update(ctr_file):
-    """
+    """ Getting case files data
     
     Args:
+        ctr_file (string) : CTR file path
     
     Return:
+        nx_g (int)  : Grid nodes in x direction
+        ny_g (int)  : Grid nodes in y direction
+        nz_g (int)  : Grid nodes in z direction
+        dx   (float): Discretization size in x direction
+        dy   (float): Discretization size in y direction
+        dz   (float): Discretization size in z direction
+        case (Case) : FPCSL case object(?)
     
     """
 
@@ -201,8 +208,7 @@ def case_update(ctr_file):
             case
 
 
-def call_cores( delta_theta_g, delta_phi_g, delta_mixing,
-                delta, U_g, dt, delta_u,
+def call_cores( delta, U_g, dt, delta_u,
                 
                 nx_g, ny_g, nz_g,
                 nx_g_half,
@@ -226,7 +232,7 @@ def call_cores( delta_theta_g, delta_phi_g, delta_mixing,
     u_bar = np.mean(u, axis=(0, 2))                                             #Avg along x and z since it is periodic
     alpha = np.mean(1 - (case.data[f"{time_step}"]["phi_2"]), axis=(0, 2))      #1 - phi_2
     
-    return  momentum_thickness(U_g, u_bar, delta_u, alpha, dy), \
+    return  momentum_thickness(U_g, u_bar, delta_u, alpha, dy, delta), \
             phi_thickness(alpha, nx_g_half, dy), \
             mixinglayer_thickness(alpha, dy)
 
@@ -248,8 +254,14 @@ def main():
     U_g             = 3.1830988618379066
     U_l             = 0.
     delta_u         = U_g - U_l
+
     dt              = 0.00025
+
     cores           = 15
+
+    start_ts        = 0
+    step_ts         = 800
+    end_ts          = 31200
 
     ctr_file        = "incompressible_tml.ctr"
 
@@ -259,20 +271,19 @@ def main():
     nx_g_half          = int(nx_g / 2)
 
     #For time-steps_{i}
-    time_steps = [i for i in range(0, 31200, 800)]
+    time_steps = [i for i in range(start_ts, end_ts, step_ts)]
 
     with ProcessPoolExecutor(max_workers=cores) as ex: 
-         futures  =                 [ex.submit(call_cores, 
+         futures  = [ex.submit(call_cores, 
 
-                                    delta_theta_g, delta_phi_g, delta_mixing,
-                                    delta, U_g, dt, delta_u,
+                    delta, U_g, dt, delta_u,
                                     
-                                    nx_g, ny_g, nz_g,
-                                    nx_g_half,
-                                    dx, dy, dz,
-                                    case,
+                    nx_g, ny_g, nz_g,
+                    nx_g_half,
+                    dx, dy, dz,
+                    case,
                                     
-                                    time_step) for time_step in time_steps ]
+                    time_step) for time_step in time_steps]
  
     return futures
 
