@@ -4,6 +4,7 @@ import numpy as np
 import os
 import csv
 import argparse
+import re, pathlib
 
 
 def parse_args():
@@ -41,6 +42,26 @@ def parse_args():
                             help='Number of grid nodes in the z-direction'
                        )
     return parser.parse_args()
+
+def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
+    """ To grep all the required data from the CTR file
+    
+    Args:
+        st (string) : The variable whose data is to be grep-ed
+    
+    Return:
+        The variable's value
+    """
+    
+    text = pathlib.Path(ctr_file).read_text()
+    #m   = re.search(rf"\b{st}\s*=\s*(\d+)", text)
+    #n   = int(m.group(1)) if m else None
+
+    pat = re.compile(rf"\b{re.escape(st)}\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
+    m = pat.search(text)
+    n   = float(m.group(1)) if m else None
+
+    return n
 
 
 def plot_thickness(time_steps, delta, x_label, y_label, file_name):
@@ -127,7 +148,7 @@ def mixinglayer_thickness(alpha, dy):
     return delta_mixing
     
 
-def case_update():
+def case_update(ctr_file):
     """
     
     Args:
@@ -137,22 +158,37 @@ def case_update():
     """
 
     case        = Case(path='./.')
-    update_file = './incompressible.ctr'
 
-    args = parse_args()
-    nx_g, ny_g, nz_g = args.nx_g, args.ny_g, args.nz_g
+    #args = parse_args()
+    #nx_g, ny_g, nz_g = args.nx_g, args.ny_g, args.nz_g
+
+    #Grid
+    nx_g = int(grep_ctr("nx"))
+    ny_g = int(grep_ctr("ny"))
+    nz_g = int(grep_ctr("nz"))
+    #Domain
+    xmax = grep_ctr("xmax")
+    a    = xmax / np.pi
+    ymax = grep_ctr("ymax")
+    b    = ymax / np.pi
+    zmax = grep_ctr("zmax")
+    c    = zmax / np.pi
+    #Parallel
+    nxsd = int(grep_ctr("nxsd"))
+    nysd = int(grep_ctr("nysd"))
+    nzsd = int(grep_ctr("nzsd"))
 
     #Update default parameters
     to_update_parameters = case.parameters
-    to_update_parameters['grid']['x_max']                                       = 2. * np.pi
-    to_update_parameters['grid']['y_max']                                       = 2. * np.pi
-    to_update_parameters['grid']['z_max']                                       = 5 * (2.*np.pi/nx_g)
+    to_update_parameters['grid']['x_max']                                       = a * np.pi
+    to_update_parameters['grid']['y_max']                                       = b * np.pi
+    to_update_parameters['grid']['z_max']                                       = 5 * ((2 * np.pi) / nx_g)
     to_update_parameters['grid']['nx']                                          = nx_g
     to_update_parameters['grid']['ny']                                          = ny_g
     to_update_parameters['grid']['nz']                                          = nz_g
-    to_update_parameters['simulation_parameters']['parallel']['nxsd']           = 32
-    to_update_parameters['simulation_parameters']['parallel']['nysd']           = 32
-    to_update_parameters['simulation_parameters']['parallel']['nzsd']           = 1
+    to_update_parameters['simulation_parameters']['parallel']['nxsd']           = nxsd
+    to_update_parameters['simulation_parameters']['parallel']['nysd']           = nysd
+    to_update_parameters['simulation_parameters']['parallel']['nzsd']           = nzsd
     to_update_parameters['simulation_parameters']['solvers']['incompressible']  = True
 
     #Update and check parameters
@@ -208,17 +244,18 @@ def main():
     delta_theta_g   = []
     delta_phi_g     = []
     delta_mixing    = []
-
     delta           = (2. * np.pi) / 100.
     U_g             = 3.1830988618379066
     U_l             = 0.
     delta_u         = U_g - U_l
     dt              = 0.00025
-    cores           = 24
+    cores           = 15
+
+    ctr_file        = "incompressible_tml.ctr"
 
     (nx_g, ny_g, nz_g,
      dx, dy, dz,       
-     case)             = case_update()
+     case)             = case_update(ctr_file)
     nx_g_half          = int(nx_g / 2)
 
     #For time-steps_{i}
