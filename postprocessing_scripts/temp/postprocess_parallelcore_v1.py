@@ -191,38 +191,49 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
     #case.read_time_steps([time_step], to_interpolate=True)
     
     case.distribute_block_list()
+    quit()
     block_list = case.rank_block_list
 
     #for time_step in time_steps:
-    #if case.rank == 0:
-    #    print(f"Processing time step {time_step}..")
+    if case.rank == 0:
+        print(f"Processing time step {time_step}..")
 
-    #For finding u_bar
-    local_u_list = []
-    local_u      = []
+    #if case.rank == 0:
+    #    for nr in block_list:
+    #        nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(nr)
+    #        block         = case.read_block(time_step, nxr, nyr, nzr, to_read=['u', 'phi_2'], to_interpolate=True)
+    #        u     = block['u']
+    #        phi_2 = block['phi_2']
+    #    
+    #        #print(u.shape) 
+    #        
+    #        local_u_bar = np.mean(u, axis = (0, 2))
+    #        print(local_u_bar.shape)
+    #        #Append this to local_u
+    #        #local_u = 
+    #         
+    #        del block
+
+    #    rank_u_bar = np.mean(local_u_bar)
+    #    print(rank_u_bar.shape)
+    #    print(rank_u_bar)
     
     for nr in block_list:
         nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(nr)
         block         = case.read_block(time_step, nxr, nyr, nzr, to_read=['u', 'phi_2'], to_interpolate=True)
+        v_grid_coordx = block['v_grid_coordx']
+        v_grid_coordy = block['v_grid_coordy']
+        v_grid_coordz = block['v_grid_coordz']
         u     = block['u']
         phi_2 = block['phi_2']
+        if(v_grid_coordy == 0.0):
+            if(v_grid_coordz == 0.0):
+                print(nr)
+        #print(v_grid_coordx, v_grid_coordy, v_grid_coordz)
     
-        #print(u.shape) 
-        
-        local_u_bar = np.mean(u, axis = (0, 2))
-        print(local_u_bar.shape)
-        quit()
-        #Append this to local_u
-        #local_u = 
-         
         del block
     
-    
-    local_u_bar = np.mean(u, axis = (0, 2))
-
-    local_u       = np.concatenate(local_u_list)
-    local_u_sum   = local_u.sum() 
-    local_u_count = local_u.size
+    quit()
     
     if(case.rank == 0):
         global_u_sum    = case.comm.reduce(local_u_sum, op=MPI.SUM, root=0)
@@ -230,7 +241,6 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
         global_mean     = global_u_sum / global_u_count
         print(global_mean)
         exit(0)
-
 
     for nr in block_list:
         nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(nr)

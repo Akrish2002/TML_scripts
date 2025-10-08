@@ -164,10 +164,7 @@ def case_update(ctr_file):
     
     """
 
-    case        = Case(path='./.')
-
-    #args = parse_args()
-    #nx_g, ny_g, nz_g = args.nx_g, args.ny_g, args.nz_g
+    case = Case(path='./.')
 
     #Grid
     nx_g = int(grep_ctr("nx"))
@@ -189,7 +186,8 @@ def case_update(ctr_file):
     to_update_parameters = case.parameters
     to_update_parameters['grid']['x_max']                                       = a * np.pi
     to_update_parameters['grid']['y_max']                                       = b * np.pi
-    to_update_parameters['grid']['z_max']                                       = 5 * ((2 * np.pi) / nx_g)
+    to_update_parameters['grid']['z_max']                                       = c * np.pi
+    #to_update_parameters['grid']['z_max']                                       = 5 * ((2 * np.pi) / nx_g)
     to_update_parameters['grid']['nx']                                          = nx_g
     to_update_parameters['grid']['ny']                                          = ny_g
     to_update_parameters['grid']['nz']                                          = nz_g
@@ -225,9 +223,7 @@ def call_cores( delta, U_g, dt, delta_u,
     """
 
     case.read_time_steps([time_step], to_interpolate=True)
-    u, v, w  = case.data[f'{time_step}']['u'], \
-               case.data[f'{time_step}']['v'], \
-               case.data[f'{time_step}']['w']
+    u = case.data[f'{time_step}']['u']
 
     u_bar = np.mean(u, axis=(0, 2))                                             #Avg along x and z since it is periodic
     alpha = np.mean(1 - (case.data[f"{time_step}"]["phi_2"]), axis=(0, 2))      #1 - phi_2
