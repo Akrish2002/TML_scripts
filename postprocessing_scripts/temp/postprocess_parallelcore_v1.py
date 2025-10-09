@@ -5,6 +5,50 @@ import os
 import csv
 import argparse
 import re, pathlib
+from pathlib import Path
+
+
+def grep_timestep(path = ".")
+    """ Grepping file names of interest
+    
+    Args:
+    
+    Return:
+    
+    """
+    
+    root = Path(path)
+    nums = []
+    
+    for p in root.iterdir():
+        m = re.fullmatch(r"time_step-(\d+)", p.name)
+        if m:
+            nums.append(int(m.group(1)))
+    
+    if nums:
+        fs, step, ls = min(nums), nums[1] - nums[0], max(nums)
+    
+    return fs, steps, ls
+
+
+def writetoCSV(time_steps, mt, pt, mixt, FILENAME)
+    """ To write data to CSV file
+    
+    Args:
+        
+    
+    Return:
+        CSV file populated with data
+    """
+
+    with open(f"{FILENAME}.csv", "w", newline='') as f:
+        writer = csv.writer(f)
+
+        writer.writerow(["Time", "Momentum", "Phi", "Mixing"])
+
+        for t, m, phi, mixing in zip(time_steps, mt, pt, mixt):
+            #writer.writerow([(t * dt * U_g)/delta, m, phi, mixing])
+            writer.writerow([t, m, phi, mixing])
 
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
@@ -201,8 +245,9 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
     a = int(nx_g / nxsd)
     b = int(ny_g / nysd)
     c = int(nz_g / nzsd)
-    u_block   = np.empty  ((a, b, c, nzsd, nxsd))
+    u_block     = np.empty((a, b, c, nzsd, nxsd))
     alpha_block = np.empty((a, b, c, nzsd, nxsd))
+
     for i in range(nxsd):
         for k in range(nzsd): 
             nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(filtered_block_list[i * nzsd + k])
@@ -210,35 +255,31 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
             u     = block['u']
             phi_2 = block['phi_2']
             
-            u_block[..., k, i]   = u    
+            u_block[..., k, i]     = u    
             alpha_block[..., k, i] = 1 - phi_2    
             
             del(block)
-    
+
     #Averaging
     #Could you once again check why you are averaging out the alpha?
     u_bar = np.mean(u_block, axis=(0, 2, 3, 4)) 
     alpha = np.mean(alpha_block, axis=(0, 2, 3, 4)) 
     
-    local_mt    = momentum_thickness(U_g, u_bar, delta_u, alpha, dy, delta)
-    local_pt    = phi_thickness(alpha, nx_g_half, dy)
-    local_mixt  = mixinglayer_thickness(alpha, dy)
-
-    #if(case.rank == 0):
-    global_mt   = case.comm.reduce(local_mt, op=MPI.SUM, root=0)
-    global_pt   = case.comm.reduce(local_pt, op=MPI.SUM, root=0)
-    global_mixt = case.comm.reduce(local_mixt, op=MPI.SUM, root=0)
-
+    #Clumping for global u_profile
+    parts_u     = case.comm.gather(u_bar, root=0)
+    parts_alpha = case.comm.gather(alpha, root=0)
+    
     if(case.rank == 0):
-        print(global_mt)
-        print(global_pt)
-        print(global_mixt)
+        global_u_bar = np.concatenate(parts_u, axis=0)
+        global_alpha = np.concatenate(parts_alpha, axis=0)
+
+        global_mt    = momentum_thickness(U_g, global_u_bar, delta_u, global_alpha, dy, delta)
+        global_pt    = phi_thickness(alpha, nx_g_half, dy)
+        global_mixt  = mixinglayer_thickness(alpha, dy)
     
-    quit()
-    
-    return  momentum_thickness,  \
-            phi_thickness,       \
-            mixinglayer_thickness
+    #return  momentum_thickness,  \
+    #        phi_thickness,       \
+    #        mixinglayer_thickness
 
 
 def main():
@@ -259,38 +300,37 @@ def main():
     U_l             = 0.
     delta_u         = U_g - U_l
 
-    dt              = 0.001
+    dt              = grep_ctr("dt")
 
-    cores           = 1
-
-    start_ts        = 0
-    step_ts         = 2000
-    end_ts          = 2000
+    (start_ts, step_ts, end_ts) = grep_timestep()
 
     ctr_file        = "incompressible_tml.ctr"
 
     (nx_g, ny_g, nz_g,
      dx, dy, dz,       
      case)             = case_update(ctr_file)
-    nx_g_half          = int(nx_g / 2)
+    ny_g_half          = int(ny_g / 2)
 
     #For time-steps_{i}
     time_steps = [i for i in range(start_ts, end_ts, step_ts)]
     
+    momentum_thickness    = np.empty(time_steps)
+    phi_thickness         = np.empty(time_steps) 
+    mixinglayer_thickness = np.empty(time_steps)
     for time_step in time_steps:
 
-        (momentum_thickness,  
-        phi_thickness,       
-        mixinglayer_thickness) = split_timestep_over_cores(delta, U_g, dt, delta_u,
+        (momentum_thickness[time_step], 
+        phi_thickness[time_step],       
+        mixinglayer_thickness[time_step]) = split_timestep_over_cores(delta, U_g, dt, delta_u,
                     
-                                                           nx_g, ny_g, nz_g,
-                                                           nx_g_half,
-                                                           dx, dy, dz,
-                                                           case,
-                                                           
-                                                           time_step)
+                                                                      nx_g, ny_g, nz_g,
+                                                                      ny_g_half,
+                                                                      dx, dy, dz,
+                                                                      case,
+                                                                      
+                                                                      time_step)
 
-    return momentum_thickness, phi_thickness, mixinglayer_thickness
+    return time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness
 
 
 if __name__ == "__main__":
@@ -298,4 +338,5 @@ if __name__ == "__main__":
     phi_thickness,       
     mixinglayer_thickness) = main()
 
-    print(mixinglayer_thickness)
+    writetoCSV(time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness, "integrand_n512_parallelcore")
+
