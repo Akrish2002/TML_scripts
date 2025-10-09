@@ -276,10 +276,8 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
         global_mt    = momentum_thickness(U_g, global_u_bar, delta_u, global_alpha, dy, delta)
         global_pt    = phi_thickness(alpha, nx_g_half, dy)
         global_mixt  = mixinglayer_thickness(alpha, dy)
-    
-    #return  momentum_thickness,  \
-    #        phi_thickness,       \
-    #        mixinglayer_thickness
+        
+        return global_mt, global_pt, global_mixt
 
 
 def main():
