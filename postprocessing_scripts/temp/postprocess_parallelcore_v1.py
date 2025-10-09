@@ -8,7 +8,7 @@ import re, pathlib
 from pathlib import Path
 
 
-def grep_timestep(path = ".")
+def grep_timestep(path = "."):
     """ Grepping file names of interest
     
     Args:
@@ -31,7 +31,7 @@ def grep_timestep(path = ".")
     return fs, steps, ls
 
 
-def writetoCSV(time_steps, mt, pt, mixt, FILENAME)
+def writetoCSV(time_steps, mt, pt, mixt, FILENAME):
     """ To write data to CSV file
     
     Args:
