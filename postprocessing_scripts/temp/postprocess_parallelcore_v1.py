@@ -188,48 +188,19 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
     
     """
 
-    #case.read_time_steps([time_step], to_interpolate=True)
-    
-    case.distribute_block_list()
+    case.distribute_block_list_axis_stack(1)
     quit()
-    block_list = case.rank_block_list
+    filtered_block_list = case.filtered_rank_block_list
 
     #for time_step in time_steps:
-    if case.rank == 0:
-        print(f"Processing time step {time_step}..")
-
     #if case.rank == 0:
-    #    for nr in block_list:
-    #        nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(nr)
-    #        block         = case.read_block(time_step, nxr, nyr, nzr, to_read=['u', 'phi_2'], to_interpolate=True)
-    #        u     = block['u']
-    #        phi_2 = block['phi_2']
-    #    
-    #        #print(u.shape) 
-    #        
-    #        local_u_bar = np.mean(u, axis = (0, 2))
-    #        print(local_u_bar.shape)
-    #        #Append this to local_u
-    #        #local_u = 
-    #         
-    #        del block
+    #    print(f"Processing time step {time_step}..")
 
-    #    rank_u_bar = np.mean(local_u_bar)
-    #    print(rank_u_bar.shape)
-    #    print(rank_u_bar)
-    
-    for nr in block_list:
+    for nr in filtered_block_list:
         nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(nr)
         block         = case.read_block(time_step, nxr, nyr, nzr, to_read=['u', 'phi_2'], to_interpolate=True)
-        v_grid_coordx = block['v_grid_coordx']
-        v_grid_coordy = block['v_grid_coordy']
-        v_grid_coordz = block['v_grid_coordz']
         u     = block['u']
         phi_2 = block['phi_2']
-        if(v_grid_coordy == 0.0):
-            if(v_grid_coordz == 0.0):
-                print(nr)
-        #print(v_grid_coordx, v_grid_coordy, v_grid_coordz)
     
         del block
     
