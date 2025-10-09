@@ -188,65 +188,53 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
     
     """
 
+    #Change the arguement to this fn to something passed from main
     case.distribute_block_list_axis_stack(1)
-    quit()
     filtered_block_list = case.filtered_rank_block_list
 
-    #for time_step in time_steps:
-    #if case.rank == 0:
-    #    print(f"Processing time step {time_step}..")
+    #Hardcoding with nxsd since I see that it has z-x arrangement, change it later
+    nxsd = int(grep_ctr("nxsd"))
+    nysd = int(grep_ctr("nysd"))
+    nzsd = int(grep_ctr("nzsd"))
 
-    for nr in filtered_block_list:
-        nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(nr)
-        block         = case.read_block(time_step, nxr, nyr, nzr, to_read=['u', 'phi_2'], to_interpolate=True)
-        u     = block['u']
-        phi_2 = block['phi_2']
+    #Maybe change this from being a hardcoded size?
+    a = int(nx_g / nxsd)
+    b = int(ny_g / nysd)
+    c = int(nz_g / nzsd)
+    u_block   = np.empty  ((a, b, c, nzsd, nxsd))
+    alpha_block = np.empty((a, b, c, nzsd, nxsd))
+    for i in range(nxsd):
+        for k in range(nzsd): 
+            nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(filtered_block_list[i * nzsd + k])
+            block         = case.read_block(time_step, nxr, nyr, nzr, to_read=['u', 'phi_2'], to_interpolate=True)
+            u     = block['u']
+            phi_2 = block['phi_2']
+            
+            u_block[..., k, i]   = u    
+            alpha_block[..., k, i] = 1 - phi_2    
+            
+            del(block)
     
-        del block
+    #Averaging
+    #Could you once again check why you are averaging out the alpha?
+    u_bar = np.mean(u_block, axis=(0, 2, 3, 4)) 
+    alpha = np.mean(alpha_block, axis=(0, 2, 3, 4)) 
+    
+    local_mt    = momentum_thickness(U_g, u_bar, delta_u, alpha, dy, delta)
+    local_pt    = phi_thickness(alpha, nx_g_half, dy)
+    local_mixt  = mixinglayer_thickness(alpha, dy)
+
+    #if(case.rank == 0):
+    global_mt   = case.comm.reduce(local_mt, op=MPI.SUM, root=0)
+    global_pt   = case.comm.reduce(local_pt, op=MPI.SUM, root=0)
+    global_mixt = case.comm.reduce(local_mixt, op=MPI.SUM, root=0)
+
+    if(case.rank == 0):
+        print(global_mt)
+        print(global_pt)
+        print(global_mixt)
     
     quit()
-    
-    if(case.rank == 0):
-        global_u_sum    = case.comm.reduce(local_u_sum, op=MPI.SUM, root=0)
-        global_u_count  = case.comm.reduce(local_u_count, op=MPI.SUM, root=0)
-        global_mean     = global_u_sum / global_u_count
-        print(global_mean)
-        exit(0)
-
-    for nr in block_list:
-        nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(nr)
-        block         = case.read_block(time_step, 
-                                        nxr, nyr, nzr,
-                                        to_read=['u', 'phi_2'])
-        u     = block['u']
-        phi_2 = block['phi_2']
-        u_bar = np.mean(u, axis=(0, 2))                                         #Avg along x and z since it is periodic
-        #alpha = np.mean(1 - (case.data[f"{time_step}"]["phi_2"]), axis=(0, 2)) #1 - phi_2
-        alpha = np.mean(1 - phi_2, axis=(0, 2))      #1 - phi_2
-        
-        mt    = momentum_thickness(U_g, u_bar, delta_u, alpha, dy, delta)
-        pt    = phi_thickness(alpha, nx_g_half, dy)
-        #mixinglayer_thickness = mixinglayer_thickness(alpha, dy)
-
-        del(block)
-
-    global_sum_momentum_thickness = case.comm.reduce(mt, op=MPI.SUM, root=0)
-    global_sum_phi_thickness = case.comm.reduce(pt, op=MPI.SUM, root=0)
-    if(case.rank == 0):
-        print(pt)
-        print(global_sum_phi_thickness)
-
-        #print(mt)
-        #print(global_sum_momentum_thickness)
-
-    exit(0)
-    #u  = case.data[f'{time_step}']['u']
-    
-    #print(u)
-    #exit(0)
-
-    #u_bar = np.mean(u, axis=(0, 2))                                             #Avg along x and z since it is periodic
-    #alpha = np.mean(1 - (case.data[f"{time_step}"]["phi_2"]), axis=(0, 2))      #1 - phi_2
     
     return  momentum_thickness,  \
             phi_thickness,       \
@@ -271,7 +259,7 @@ def main():
     U_l             = 0.
     delta_u         = U_g - U_l
 
-    dt              = 0.00025
+    dt              = 0.001
 
     cores           = 1
 
