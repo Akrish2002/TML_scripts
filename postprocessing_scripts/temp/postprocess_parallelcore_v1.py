@@ -219,7 +219,7 @@ def case_update(ctr_file):
 def split_timestep_over_cores(delta, U_g, dt, delta_u,
                 
                               nx_g, ny_g, nz_g,
-                              nx_g_half,
+                              ny_g_half,
                               dx, dy, dz,
                               case,
                               
@@ -274,10 +274,17 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
         global_alpha = np.concatenate(parts_alpha, axis=0)
 
         global_mt    = momentum_thickness(U_g, global_u_bar, delta_u, global_alpha, dy, delta)
-        global_pt    = phi_thickness(alpha, nx_g_half, dy)
-        global_mixt  = mixinglayer_thickness(alpha, dy)
+        global_pt    = phi_thickness(global_alpha, ny_g_half, dy)
+        global_mixt  = mixinglayer_thickness(global_alpha, dy)
     
-        return global_mt, global_pt, global_mixt
+        res = global_mt, global_pt, global_mixt
+    
+    else:
+        res = None
+
+    res = case.comm.bcast(res, root=0)
+    #return global_mt, global_pt, global_mixt
+    return res
 
 
 def main():
@@ -333,9 +340,9 @@ def main():
 
 
 if __name__ == "__main__":
-    (momentum_thickness,  
+    (time_steps, momentum_thickness,  
     phi_thickness,       
     mixinglayer_thickness) = main()
 
-    writetoCSV(time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness, "integrand_n512_parallelcore")
+    writetoCSV(time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness, "integrand_data_n512_parallelcore")
 
