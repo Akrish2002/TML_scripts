@@ -28,7 +28,7 @@ def grep_timestep(path = "."):
     if nums:
         fs, step, ls = min(nums), nums[1] - nums[0], max(nums)
     
-    return fs, steps, ls
+    return fs, step, ls
 
 
 def writetoCSV(time_steps, mt, pt, mixt, FILENAME):
@@ -276,7 +276,7 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
         global_mt    = momentum_thickness(U_g, global_u_bar, delta_u, global_alpha, dy, delta)
         global_pt    = phi_thickness(alpha, nx_g_half, dy)
         global_mixt  = mixinglayer_thickness(alpha, dy)
-        
+    
         return global_mt, global_pt, global_mixt
 
 
@@ -312,21 +312,22 @@ def main():
     #For time-steps_{i}
     time_steps = [i for i in range(start_ts, end_ts, step_ts)]
     
-    momentum_thickness    = np.empty(time_steps)
-    phi_thickness         = np.empty(time_steps) 
-    mixinglayer_thickness = np.empty(time_steps)
+    momentum_thickness    = []
+    phi_thickness         = [] 
+    mixinglayer_thickness = []
     for time_step in time_steps:
 
-        (momentum_thickness[time_step], 
-        phi_thickness[time_step],       
-        mixinglayer_thickness[time_step]) = split_timestep_over_cores(delta, U_g, dt, delta_u,
+        (mt, pt, mixt) = split_timestep_over_cores(delta, U_g, dt, delta_u,
                     
-                                                                      nx_g, ny_g, nz_g,
-                                                                      ny_g_half,
-                                                                      dx, dy, dz,
-                                                                      case,
-                                                                      
-                                                                      time_step)
+                                                   nx_g, ny_g, nz_g,
+                                                   ny_g_half,
+                                                   dx, dy, dz,
+                                                   case,
+                                                   
+                                                   time_step)
+        momentum_thickness.append(mt)
+        phi_thickness.append(pt)
+        mixinglayer_thickness.append(mixt)
 
     return time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness
 
