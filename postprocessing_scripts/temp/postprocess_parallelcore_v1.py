@@ -25,6 +25,7 @@ def grep_timestep(path = "."):
         if m:
             nums.append(int(m.group(1)))
     
+    nums.sort()
     if nums:
         fs, step, ls = min(nums), nums[1] - nums[0], max(nums)
     
@@ -223,7 +224,10 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
                               dx, dy, dz,
                               case,
                               
-                              time_step):
+                              time_step,
+
+                              #Debug
+                              counter):
     """
     
     Args:
@@ -278,11 +282,17 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
         global_mixt  = mixinglayer_thickness(global_alpha, dy)
     
         res = global_mt, global_pt, global_mixt
-    
+        
+        #Debug
+        print(res, flush=True)
+        print(counter, flush=True)
+ 
     else:
         res = None
 
     res = case.comm.bcast(res, root=0)
+    #if(counter == 2):
+    #    quit()
     #return global_mt, global_pt, global_mixt
     return res
 
@@ -317,8 +327,20 @@ def main():
     ny_g_half          = int(ny_g / 2)
 
     #For time-steps_{i}
-    time_steps = [i for i in range(start_ts, end_ts, step_ts)]
+    #time_steps = [i for i in range(start_ts, end_ts, step_ts)]
+    time_steps = [i for i in range(start_ts, 30000, step_ts)]
+    #time_steps = [i for i in range(32000, end_ts, step_ts)]                     --> Gives me error
+    #time_steps = [i for i in range(34000, end_ts, step_ts)]
     
+    #Debug
+    counter=0
+    if case.comm.Get_rank() == 0:
+        f = open("integrand_data_n1024_parallelcore_till30000.csv", "w", newline="")
+        w = csv.writer(f)
+        w.writerow(["Time", "Momentum", "Phi", "Mixing"])
+    else:
+        f = w = None
+
     momentum_thickness    = []
     phi_thickness         = [] 
     mixinglayer_thickness = []
@@ -331,10 +353,21 @@ def main():
                                                    dx, dy, dz,
                                                    case,
                                                    
-                                                   time_step)
+                                                   time_step,
+                                                    
+                                                   #Debug
+                                                   counter)
         momentum_thickness.append(mt)
         phi_thickness.append(pt)
         mixinglayer_thickness.append(mixt)
+        
+        #Debug
+        if case.rank == 0:
+            w.writerow([time_step, mt, pt, mixt])
+            f.flush()               # push to OS buffers
+            os.fsync(f.fileno()) 
+        #Debug
+        counter+=1
 
     return time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness
 
@@ -344,5 +377,5 @@ if __name__ == "__main__":
     phi_thickness,       
     mixinglayer_thickness) = main()
 
-    writetoCSV(time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness, "integrand_data_n512_parallelcore")
+    #writetoCSV(time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness, "integrand_data_n1024_parallelcore")
 
