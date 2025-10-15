@@ -16,9 +16,15 @@ def plot_thickness(filename, a, label, linestyle="-"):
     plt.plot(time_steps, y, linestyle, label=label)                             
                                                     
 
-def perform_plotting():
+def perform_plotting(specific_dataset = False):
     for ii in range(3):
-        for jj in range(3):
+        if(specific_dataset):
+            start = specific_dataset - 1
+            stop  = specific_dataset
+        else:
+            start = 0
+            stop  = 3 
+        for jj in range(start, stop):
             plot_thickness(files[1][jj], 1, label=files[0][jj], linestyle="-")  
 
             plt.xlabel(integrands[0][0])                                                              
@@ -30,7 +36,7 @@ def perform_plotting():
 
 
 def main(): 
-    perform_plotting()
+    perform_plotting(1)
 
 
 if __name__ == "__main__":
