@@ -1,22 +1,38 @@
-import numpy as np
-import matplotlib.pyplot as plt
+import numpy as np                                                              
+import matplotlib.pyplot as plt                                                 
+                                                                                
 
-def plot_thickness(filename, a, label, linestyle="-"):
-    data = np.genfromtxt(filename, delimiter=",", skip_header=1) 
-    time_steps = data[:, 0]  
-    y = data[:, a]
-    #momentum_thickness = data[:, 1] 
-    plt.plot(time_steps, y, linestyle, label=label)
+n256_data = "integrand_data_n256.csv"
+n512_data = "integrand_data_n512.csv"
+n1024_data = "integrand_data_n1024.csv"
+files = [["n256", "n512", "n1024"], [n256_data, n512_data, n1024_data]]
+integrands = [["Time"], ["Momentum_Thickness", "VolFrac_Thickness", "Mixing_Thickness"]]
 
-#Momentum
-plot_thickness("integrand_data_n256.csv", 1, label="n256", linestyle="-")
-plot_thickness("integrand_data_n512.csv", 1, label="n512", linestyle="--")
-plot_thickness("integrand_data_n1024.csv", 1, label="n1024", linestyle="--")
 
-plt.xlabel("Time")
-plt.ylabel("Momentum Thickness")
-plt.legend()
-plt.grid(True)
+def plot_thickness(filename, a, label, linestyle="-"):                          
+    data = np.genfromtxt(filename, delimiter=",", skip_header=1)                
+    time_steps = data[:, 0]                                                     
+    y = data[:, a]                                                              
+    plt.plot(time_steps, y, linestyle, label=label)                             
+                                                    
 
-plt.savefig("Momentum_Thickness_overlay.png")
+def perform_plotting():
+    for ii in range(3):
+        for jj in range(3):
+            plot_thickness(files[1][jj], 1, label=files[0][jj], linestyle="-")  
+
+            plt.xlabel(integrands[0][0])                                                              
+            plt.ylabel(integrands[1][ii])                                                
+            plt.legend()                                                                    
+            plt.grid(True)                                                                  
+                                                                                            
+            plt.savefig(f"{integrands[1][ii]}_overlay.png") 
+
+
+def main(): 
+    perform_plotting()
+
+
+if __name__ == "__main__":
+    main()
 
