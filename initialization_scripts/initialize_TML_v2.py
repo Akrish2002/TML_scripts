@@ -18,6 +18,11 @@ def parse_args():
                        )
 
     parser.add_argument(
+                            '--nz_g', type=int, required=True,
+                            help='Number of grid nodes in the z-direction'
+                       )
+
+    parser.add_argument(
                             '--nxsd', type=int, required=True,
                        )
 
@@ -25,6 +30,9 @@ def parse_args():
                             '--nysd', type=int, required=True,
                        )
 
+    parser.add_argument(
+                            '--nzsd', type=int, required=True,
+                       )
 
 
     return parser.parse_args()
@@ -48,19 +56,20 @@ if __name__ == '__main__':
     case = Case(path='./.')
 
     args = parse_args()
-    nx_g, ny_g, nxsd, nysd = args.nx_g, args.ny_g, args.nxsd, args.nysd
+    nx_g, ny_g, nz_g = args.nx_g, args.ny_g, args.nz_g
+    nxsd, nysd, nzsd = args.nxsd, args.nysd, args.nzsd
 
     # Update default parameters
     to_update_parameters = case.parameters
     to_update_parameters['grid']['x_max'] = 2.*np.pi
     to_update_parameters['grid']['y_max'] = 2.*np.pi
-    to_update_parameters['grid']['z_max'] = 5*(2.*np.pi/nx_g)
+    to_update_parameters['grid']['z_max'] = 2.*np.pi
     to_update_parameters['grid']['nx'] = nx_g
     to_update_parameters['grid']['ny'] = ny_g
-    to_update_parameters['grid']['nz'] = 5
+    to_update_parameters['grid']['nz'] = nz_g
     to_update_parameters['simulation_parameters']['parallel']['nxsd'] = nxsd
     to_update_parameters['simulation_parameters']['parallel']['nysd'] = nysd
-    to_update_parameters['simulation_parameters']['parallel']['nzsd'] = 1
+    to_update_parameters['simulation_parameters']['parallel']['nzsd'] = nzsd
     to_update_parameters['simulation_parameters']['solvers']['incompressible'] = True
 
     # Update and check parameters   
@@ -113,9 +122,11 @@ if __name__ == '__main__':
 
     unoise = add_random_noise(u)
     vnoise = add_random_noise_based_ref(u, v)
+    wnoise = add_random_noise_based_ref(u, v)
 
-    print("--U min & max val: ", u.min(), u.max())
-    print("--V min & max val: ", v.min(), v.max())
+    print("--U min & max val: ", unoise.min(), unoise.max())
+    print("--V min & max val: ", vnoise.min(), vnoise.max())
+    print("--W min & max val: ", wnoise.min(), wnoise.max())
 
     idx = int(case.grid['nx']/2.)
     fig, ax1 = plt.subplots(figsize=(3,3))
@@ -165,14 +176,13 @@ if __name__ == '__main__':
     #plt.show()
     plt.close(fig)
 
-    custom['uc'] = unoise
-    custom['vc'] = vnoise
-    custom['wc'] = zeros
+    custom['u'] = unoise
+    custom['v'] = vnoise
+    custom['w'] = wnoise
     custom['phi_1'] = phi1
     custom['phi_2'] = phi2
     custom['rho'] = rho
     custom['p'] = ones
-    custom['mu'] = mu
     custom['mu'] = mu
     print("--", end="")
     case.write_custom_fields(time_step, custom, to_interpolate=True)
