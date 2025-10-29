@@ -6,6 +6,16 @@ import csv
 import argparse
 import re, pathlib
 from pathlib import Path
+import sys
+
+
+def parse_args():
+    
+    #1. Filename
+    filenameparser = argparse.ArgumentParser(description='Filename')
+    filenameparser.add_argument('--fname', type=str, required=True, help='Filename for .csv')
+
+    return filenameparser.parse_args()
 
 
 def grep_timestep(path = "."):
@@ -227,7 +237,7 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
                               time_step,
 
                               #Debug
-                              counter):
+                              counter=0):
     """
     
     Args:
@@ -285,15 +295,12 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
         
         #Debug
         print(res, flush=True)
-        print(counter, flush=True)
+        #print(counter, flush=True)
  
     else:
         res = None
 
     res = case.comm.bcast(res, root=0)
-    #if(counter == 2):
-    #    quit()
-    #return global_mt, global_pt, global_mixt
     return res
 
 
@@ -326,18 +333,20 @@ def main():
      case)             = case_update(ctr_file)
     ny_g_half          = int(ny_g / 2)
 
-    #For time-steps_{i}
-    #time_steps = [i for i in range(start_ts, end_ts, step_ts)]
-    time_steps = [i for i in range(start_ts, 30000, step_ts)]
+    #For time-steps_{i}                                                         
+    time_steps = [i for i in range(start_ts, end_ts, step_ts)]
     #time_steps = [i for i in range(32000, end_ts, step_ts)]                     --> Gives me error
-    #time_steps = [i for i in range(34000, end_ts, step_ts)]
+    #time_steps = [i for i in range(100000, 120000, 2000)]
     
     #Debug
-    counter=0
+    #counter=0
     if case.comm.Get_rank() == 0:
-        f = open("integrand_data_n1024_parallelcore_till30000.csv", "w", newline="")
+        fname = f"integrand_data_n{nx_g}.csv"
+        write_header = not os.path.exists(fname) or os.path.getsize(fname) == 0
+        f = open(fname, "a", newline="")
         w = csv.writer(f)
-        w.writerow(["Time", "Momentum", "Phi", "Mixing"])
+        if write_header:
+            w.writerow(["TimeStep", "Momentum", "Phi", "Mixing"])
     else:
         f = w = None
 
@@ -356,7 +365,7 @@ def main():
                                                    time_step,
                                                     
                                                    #Debug
-                                                   counter)
+                                                   )
         momentum_thickness.append(mt)
         phi_thickness.append(pt)
         mixinglayer_thickness.append(mixt)
@@ -367,15 +376,23 @@ def main():
             f.flush()               # push to OS buffers
             os.fsync(f.fileno()) 
         #Debug
-        counter+=1
+        #counter+=1
 
-    return time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness
+    #return time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness
 
 
 if __name__ == "__main__":
-    (time_steps, momentum_thickness,  
-    phi_thickness,       
-    mixinglayer_thickness) = main()
+    #(time_steps, momentum_thickness,  
+    #phi_thickness,       
+    #mixinglayer_thickness) = main()
 
     #writetoCSV(time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness, "integrand_data_n1024_parallelcore")
+
+    #This is for the bash script
+    if len(sys.argv) > 1:
+        ny_g = int(grep_ctr("nysd"))
+        print(ny_g)
+
+    else:
+        main()
 
