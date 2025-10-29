@@ -1,11 +1,11 @@
-grid: nx = 1024 ny = 1024 nz = 5 pad = 2
-domain: xmin = 0. xmax = 6.283185307179586 ymin = 0. ymax = 6.283185307179586 zmin = 0. zmax = 0.1227184630308513
-parallel: nxsd = 32 nysd = 32 nzsd = 1 x_periodic = 1 y_periodic = 0 z_periodic = 1
+grid: nx = 128 ny = 128 nz = 128 pad = 2
+domain: xmin = 0. xmax = 6.283185307179586 ymin = 0. ymax = 6.283185307179586 zmin = 0. zmax = 6.283185307179586
+parallel: nxsd = 2 nysd = 2 nzsd = 2 x_periodic = 1 y_periodic = 0 z_periodic = 1
 physicalparams: rho1o = 1. rho2o = 1. mu1 = 1.e-3 mu2 = 5.e-2 sigma = 0.031831
-simulationparams: start_time = 0. end_time = 20 dt = 0.00025 interface_test = 0 incompressible = 1
+simulationparams: start_time = 0. end_time = 20 dt = 0.001 interface_test = 0 incompressible = 1
 interfaceparams: Gamma = 1. eps = 0.51 eps_o = 0.51 psi_eps = 100. newRHSnewNORM = 1
-output: output_step = 800
-restart: mode = 1 time_step = 32000
+output: output_step = 250
+restart: mode = 1 time_step = 0
 
 boundaryconditions: number = 8
 

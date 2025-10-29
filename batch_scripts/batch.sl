@@ -2,7 +2,7 @@
 #SBATCH -A tur147
 #SBATCH -J n128
 #SBATCH -o %x-%j.out
-#SBATCH -t 00:10:00
+#SBATCH -t 00:30:00
 #SBATCH -p batch
 #SBATCH -N 1
 

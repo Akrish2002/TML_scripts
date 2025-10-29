@@ -23,8 +23,11 @@ do
 
     #Making subfolders in each
     cd $fname
+    mkdir run1
+    cd run1
     mkdir "log"
     mkdir "plots"
+    mkdir "postprocessed_data"
 
     #Copying the skeleton .ctr and .sl files from TML_scripts
     #cp $TMLSCRIPTS_INITIALIZATION/
@@ -32,6 +35,6 @@ do
     cp $TMLSCRIPTS_BATCH/incompressible_tml.ctr     $PATH_TO_CREATED_FOLDERS
 
     #Leave folder
-    cd ..
+    cd ../../
 done
 

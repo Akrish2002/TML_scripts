@@ -4,36 +4,24 @@ import initialize_1D_v2 as initialize_1D
 import argparse
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-                                        description='Initialize grid parameters and solve for optimal c'
-                                    )
+    parser = argparse.ArgumentParser(description='Initialize grid parameters and solve for optimal c')
 
-    parser.add_argument(
-                            '--nx_g', type=int, required=True,
-                            help='Number of grid nodes in the x-direction')
+    parser.add_argument('--nx_g', type=int, required=True,help='Number of grid nodes in the x-direction')
+    parser.add_argument('--ny_g', type=int, required=True,help='Number of grid nodes in the y-direction')
+    parser.add_argument('--nz_g', type=int, required=True,help='Number of grid nodes in the z-direction')
 
-    parser.add_argument(
-                            '--ny_g', type=int, required=True,
-                            help='Number of grid nodes in the y-direction'
-                       )
+    parser.add_argument('--nxsd', type=int, required=True,)
+    parser.add_argument('--nysd', type=int, required=True,)
+    parser.add_argument('--nzsd', type=int, required=True,)
 
-    parser.add_argument(
-                            '--nz_g', type=int, required=True,
-                            help='Number of grid nodes in the z-direction'
-                       )
+    parser.add_argument('--rho1', type=float, required=True,)
+    parser.add_argument('--rho2', type=float, required=True,)
 
-    parser.add_argument(
-                            '--nxsd', type=int, required=True,
-                       )
+    parser.add_argument('--mu1', type=float, required=True,)
+    parser.add_argument('--mu2', type=float, required=True,)
 
-    parser.add_argument(
-                            '--nysd', type=int, required=True,
-                       )
-
-    parser.add_argument(
-                            '--nzsd', type=int, required=True,
-                       )
-
+    parser.add_argument('--Re', type=float, required=True,)
+    parser.add_argument('--We', type=float, required=True,)
 
     return parser.parse_args()
 
@@ -78,14 +66,15 @@ if __name__ == '__main__':
     # Parameters
     rho1, rho2 = 1., 1.
     mu1 , mu2  = 1.e-3, 5.e-2
+    Re = 200.
+    We = 20.
+
+    # Profile set-up parameters
     U1  , U2   = 1., 0.
     V1  , V2   = 0., 0.
     yloc = np.pi
     epsilon = 0.51*case.grid['dx']
     delta = 2.*np.pi/100.
-    Re = 200.
-    We = 20.
-
     U1, sigma = params(Re, mu1, delta, rho1, We)
     Ur = U2/U1
 
