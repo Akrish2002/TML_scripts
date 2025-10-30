@@ -23,3 +23,4 @@ srun -n1 python3 $INITIALIZATION_SCRIPT/initialize_TML_v2.py --nx_g $nx_g --ny_g
                                                              --Re   $Re   --We   $We                
 
 mv *.png ./plots
+mv *.out ./job_outputs

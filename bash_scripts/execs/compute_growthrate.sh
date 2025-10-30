@@ -18,6 +18,9 @@ source activate $FPCSLPY
 
 #Grepping ny_g
 nysd=$(python3 $PYTHONSCRIPT/postprocess_parallelcore_v1.py grepnysd)
-srun -n$nysd python3 $PYTHONSCRIPT/postprocess_parallelcore_v1.py > ./postprocessed_data
+srun -n$nysd python3 $PYTHONSCRIPT/postprocess_parallelcore_v1.py 
+
+mv *.csv ./postprocessed_data 
+mv *.out ./job_outputs 
 
 

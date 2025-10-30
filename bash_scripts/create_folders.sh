@@ -26,6 +26,7 @@ do
     mkdir run1
     cd run1
     mkdir "log"
+    mkdir "job_outputs"
     mkdir "plots"
     mkdir "postprocessed_data"
 
