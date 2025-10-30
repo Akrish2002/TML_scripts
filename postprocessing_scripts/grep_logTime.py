@@ -59,7 +59,7 @@ def single_log(shift_step=0):
     
 
 def multiple_log(shift_step=0):                                                                     
-    log  = sorted(pathlib.Path(".").glob("log_*"))                               
+    log  = sorted(pathlib.Path("./log").glob("log_*"))                               
     nx_g = grep_ctr("nx_g")
                                                                                 
     f = open(f"Time_n{nx_g}.csv", "w", newline="")                                 
