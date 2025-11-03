@@ -19,7 +19,7 @@ def parse_args():
 
 
 def grep_timestep(path = "."):
-    """ Grepping file names of interest
+    """ Grepping time steps to calculate first step, step and last step
     
     Args:
     
@@ -382,12 +382,6 @@ def main():
 
 
 if __name__ == "__main__":
-    #(time_steps, momentum_thickness,  
-    #phi_thickness,       
-    #mixinglayer_thickness) = main()
-
-    #writetoCSV(time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness, "integrand_data_n1024_parallelcore")
-
     #This is for the bash script
     if len(sys.argv) > 1:
         ny_g = int(grep_ctr("nysd"))
