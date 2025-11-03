@@ -87,10 +87,10 @@ if __name__ == '__main__':
     zeros = np.zeros_like(case.grid['xcs'])
     ones  = np.ones_like(case.grid['xcs'])
 
-    phi1 = 0.5*(1.+np.tanh((case.grid['ycs']-yloc)/(2.*epsilon)))
-    phi2 = 1. - phi1
-    rho  = phi1*rho1 + (1. - phi1)*rho2
-    mu   = phi1*mu1  + (1. - phi1)*mu2
+    phi1  = 0.5 * (1. + np.tanh((case.grid['ycs'] - yloc)/(2. * epsilon)))
+    phi2  = 1. - phi1
+    rho   = phi1*rho1 + (1. - phi1)*rho2
+    mu    = phi1*mu1  + (1. - phi1)*mu2
     #mix1 = 0.5*(1.+np.tanh((case.grid['ycs']-yloc)/(2.*delta)))
     idx1  = np.where(case.grid['ycs']-yloc>=0.)
     idx2  = np.where(case.grid['ycs']-yloc<0.)
@@ -98,15 +98,15 @@ if __name__ == '__main__':
     c = initialize_1D.get_optimal_c(case.grid['ycs'], (2*np.pi/nx_g), yloc, U1, Ur, delta)
     print("--Computed c val: ", c)
 
-    u1 = (U1-Ur)*np.tanh((case.grid['ycs'][idx1]-yloc)/(c*delta)) + Ur
-    u2 = Ur*np.tanh((case.grid['ycs'][idx2]-yloc)/(c*delta)) + Ur
-    u  = np.zeros_like(case.grid['ycs'])
+    u1      = (U1 - Ur) * np.tanh((case.grid['ycs'][idx1] - yloc) / (c * delta)) + Ur
+    u2      = Ur * np.tanh((case.grid['ycs'][idx2] - yloc)/(c * delta)) + Ur
+    u       = np.zeros_like(case.grid['ycs'])
     u[idx1] = u1
     u[idx2] = u2
-    v    = phi1*V1 + (1. - phi1)*V2
+    v       = phi1*V1 + (1. - phi1) * V2
 
-    u1_t = np.mean(u, axis=(0,2))
-    alpha = np.mean(1-(case.data[f'{time_step}']['phi_2']), axis=(0,2))
+    u1_t  = np.mean(u, axis=(0,2))
+    alpha = np.mean(1 - (case.data[f'{time_step}']['phi_2']), axis=(0,2))
     print("--Normalized momentum thickness: ", initialize_1D.momentum_thickness(U1, u1_t, ((2*np.pi)/nx_g), alpha)/delta)
 
     unoise = add_random_noise(u)
