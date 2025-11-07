@@ -37,7 +37,7 @@ def momentum_thickness(Ug, u, dy, alpha=1):
       Ug   : free-stream velocity
       u    : velocity profile array
       dy   : grid spacing
-      alpha: a weighting factor (default is 1)
+      alpha: Vol frac
     
     Returns:
       The computed momentum thickness.
