@@ -26,12 +26,12 @@ def parse_args():
     return parser.parse_args()
 
 def add_random_noise(f):
-    noise = 0.05*f*np.random.normal(0, scale=1, size=f.shape)
-    return f+noise
+    noise = 0.05 * f * np.random.normal(0, scale=1, size=f.shape)
+    return f + noise
 
 def add_random_noise_based_ref(f, g):
-    noise = 0.05*f*np.random.normal(0, scale=1, size=f.shape)
-    return g+noise
+    noise = 0.05 * f * np.random.normal(0, scale=1, size=f.shape)
+    return g + noise
 
 def params(Re, mu, delta, rho, We):
     u1 = (Re * mu)/delta #Re = (U1 * delta)/mu
@@ -47,6 +47,11 @@ if __name__ == '__main__':
     nx_g, ny_g, nz_g = args.nx_g, args.ny_g, args.nz_g
     nxsd, nysd, nzsd = args.nxsd, args.nysd, args.nzsd
 
+    # Parameters
+    rho1, rho2  = args.rho1, args.rho2
+    mu1,  mu2   = args.mu1, args.mu2
+    Re,   We    = args.Re, args.We
+
     # Update default parameters
     to_update_parameters = case.parameters
     to_update_parameters['grid']['x_max'] = 2.*np.pi
@@ -60,14 +65,20 @@ if __name__ == '__main__':
     to_update_parameters['simulation_parameters']['parallel']['nzsd'] = nzsd
     to_update_parameters['simulation_parameters']['solvers']['incompressible'] = True
 
+    # Necessary data
+    print(f"--nxsd, nysd, nzsd: {nxsd}, {nysd}, {nzsd}")
+    print(f"--rho1 and rho2: {rho1}, {rho2}")
+    print(f"--mu1 and mu2: {mu1}, {mu2}")
+    print(f"--Re and We: {Re}, {We}")
+
     # Update and check parameters   
     case.update_parameters(to_update_parameters)
 
     # Parameters
-    rho1, rho2 = 1., 1.
-    mu1 , mu2  = 1.e-3, 5.e-2
-    Re = 200.
-    We = 20.
+    #rho1, rho2 = 1., 1.
+    #mu1 , mu2  = 1.e-3, 5.e-2
+    #Re = 200.
+    #We = 20.
 
     # Profile set-up parameters
     U1  , U2   = 1., 0.
@@ -89,13 +100,13 @@ if __name__ == '__main__':
 
     phi1  = 0.5 * (1. + np.tanh((case.grid['ycs'] - yloc)/(2. * epsilon)))
     phi2  = 1. - phi1
-    rho   = phi1*rho1 + (1. - phi1)*rho2
-    mu    = phi1*mu1  + (1. - phi1)*mu2
+    rho   = phi1 * rho1 + (1. - phi1) * rho2
+    mu    = phi1 * mu1  + (1. - phi1) * mu2
     #mix1 = 0.5*(1.+np.tanh((case.grid['ycs']-yloc)/(2.*delta)))
-    idx1  = np.where(case.grid['ycs']-yloc>=0.)
-    idx2  = np.where(case.grid['ycs']-yloc<0.)
+    idx1  = np.where(case.grid['ycs'] - yloc>=0.)
+    idx2  = np.where(case.grid['ycs'] - yloc<0.)
 
-    c = initialize_1D.get_optimal_c(case.grid['ycs'], (2*np.pi/nx_g), yloc, U1, Ur, delta)
+    c = initialize_1D.get_optimal_c(case.grid['ycs'], (2 * np.pi/nx_g), yloc, U1, Ur, delta)
     print("--Computed c val: ", c)
 
     u1      = (U1 - Ur) * np.tanh((case.grid['ycs'][idx1] - yloc) / (c * delta)) + Ur
@@ -107,11 +118,15 @@ if __name__ == '__main__':
 
     u1_t  = np.mean(u, axis=(0,2))
     alpha = np.mean(1 - (case.data[f'{time_step}']['phi_2']), axis=(0,2))
-    print("--Normalized momentum thickness: ", initialize_1D.momentum_thickness(U1, u1_t, ((2*np.pi)/nx_g), alpha)/delta)
+    print("--Normalized momentum thickness: ", initialize_1D.momentum_thickness(U1, u1_t, ((2 * np.pi)/nx_g), alpha) / delta)
 
     unoise = add_random_noise(u)
     vnoise = add_random_noise_based_ref(u, v)
     wnoise = add_random_noise_based_ref(u, v)
+
+    u1_t  = np.mean(unoise, axis=(0,2))
+    alpha = np.mean(1 - (case.data[f'{time_step}']['phi_2']), axis=(0,2))
+    print("--Normalized momentum thickness after noise: ", initialize_1D.momentum_thickness(U1, u1_t, ((2 * np.pi)/nx_g), alpha) / delta)
 
     print("--U min & max val: ", unoise.min(), unoise.max())
     print("--V min & max val: ", vnoise.min(), vnoise.max())
