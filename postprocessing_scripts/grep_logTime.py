@@ -86,9 +86,9 @@ def multiple_log(Init_fname, shift_step=0):
 if __name__ == "__main__":                                                      
     #If multiple log files
     #number_of_log = parse_args(1)
-    Init_fname = input("Enter initialiation job file: ")
+    Init_fname = input("--Enter initialiation job output file: ")
 
-    number_of_log = input("Grepping from multiple log files? ")
+    number_of_log = input("--Grepping from multiple log files? ")
     if(number_of_log == "Yes"):
         #shiftstep=0
         multiple_log(Init_fname)
