@@ -10,6 +10,8 @@ set -e
 #File locations
 FPCSLPY="/ccs/home/abhi/source_code/envs/fpcsl"
 PYTHONSCRIPT="/ccs/home/abhi/member-work/incompressible-tml/TML_scripts/postprocessing_scripts"
+echo "--Enter location to dump data: "
+read -r PATH_TO_DATA
 
 #Load modules
 module load miniforge3
@@ -20,7 +22,12 @@ source activate $FPCSLPY
 nysd=$(python3 $PYTHONSCRIPT/postprocess_parallelcore_v1.py grepnysd)
 srun -n$nysd python3 $PYTHONSCRIPT/postprocess_parallelcore_v1.py 
 
+#Copying the data to plot/data for plotting
+cp *.csv $PATH_TO_DATA
+
 mv *.csv ./postprocessed_data 
+mv *.out ./job_outputs 
+
 mv *.out ./job_outputs 
 
 
