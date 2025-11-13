@@ -11,7 +11,8 @@ set -e
 echo "--Functions:
         [1] Growth Rate
         [2] Compute times from log file(s)
-        [3] asdf
+        [3] Plotting growth rates
+        [4] asdf
      "
 read -r arg
 
@@ -24,6 +25,11 @@ elif [[ $arg == "2" ]]; then
     #Script to compute time
     echo "--Computing normalized time.."
     compute_normalizedtime.sh
+
+elif [[ $arg == "3" ]]; then
+    #Script to plot growth rates
+    echo "--Plotting growth rates.."
+    plot_growthrate.sh 
 
 else 
     echo"--Nothing entered!"
