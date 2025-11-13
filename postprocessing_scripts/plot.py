@@ -36,7 +36,11 @@ def perform_plotting(specific_dataset = False):
 
 
 def main(): 
-    perform_plotting(1)
+    arg = input("To plot all? ")
+    if(arg == "Yes"):
+        perform_plotting()
+    else:
+        perform_plotting(1)
 
 
 if __name__ == "__main__":
