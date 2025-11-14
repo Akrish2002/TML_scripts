@@ -362,7 +362,7 @@ def main():
                                                    dx, dy, dz,
                                                    case,
                                                    
-                                                   time_step,
+                                                   time_step
                                                     
                                                    #Debug
                                                    )
