@@ -16,6 +16,12 @@ echo "--Functions:
      "
 read -r arg
 
+echo "--Enter location to dump data: "                                          
+read -r PATH_TO_DATA
+#Making the path to data an evn variable
+PATH_TO_DATA="$PATH_TO_DATA"
+export PATH_TO_DATA
+
 if [[ $arg == "1" ]]; then
     #Script to compute growth rate
     echo "--Submitting batch job to compute growth rate.."
@@ -28,6 +34,10 @@ elif [[ $arg == "2" ]]; then
 
 elif [[ $arg == "3" ]]; then
     #Script to plot growth rates
+    echo "--Enter folder location to dump plots: "
+    read -r PATH_TO_PLOTS
+    PATH_TO_PLOTS="$PATH_TO_PLOTS"
+    export PATH_TO_PLOTS
     echo "--Plotting growth rates.."
     plot_growthrate.sh 
 
