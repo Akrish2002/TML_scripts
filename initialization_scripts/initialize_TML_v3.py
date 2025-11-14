@@ -1,3 +1,7 @@
+#This initialization script keeps a constant U_1(U_g), that should be specified by the
+#user during initialization. Honestly I do not know why the case is stable for a
+#lower U_1(U_g)
+
 import numpy as np
 import matplotlib.pyplot as plt
 import initialize_1D_v2 as initialize_1D
@@ -34,11 +38,11 @@ def add_random_noise_based_ref(f, g):
     noise = 0.05 * f * np.random.normal(0, scale=1, size=f.shape)
     return g + noise
 
-def params(Re, u, delta, rho, We):
+def params(Re, u1, delta, rho, We):
     #u1 = (Re * mu)/delta                                                        #Re = (U1 * delta)/mu
-    mu = (rho * u * delta) / Re
+    mu = (rho * u1 * delta) / Re
     sigma = (rho * u1 * u1 * delta)/We                                          #We = (rho * u1 * u1 * delta)/sigma
-    print("--U1=",u1, "--Sigma=", sigma)
+    print("--U1=", u1, "--Sigma=", sigma)
     #print("--mu1=", mu1, "--Sigma=", sigma)
     return mu, sigma
 
@@ -78,7 +82,7 @@ if __name__ == '__main__':
     #We = 20.
 
     # Profile set-up parameters
-    U1  , U2   = 1., 0.
+    U2         = 0.
     V1  , V2   = 0., 0.
     yloc = np.pi
     epsilon = 0.51 * case.grid['dx']

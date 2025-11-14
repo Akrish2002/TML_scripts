@@ -4,8 +4,6 @@ set -euo pipefail
 #File locations
 FPCSLPY="/ccs/home/abhi/source_code/envs/fpcsl"
 PYTHONSCRIPT="/ccs/home/abhi/member-work/incompressible-tml/TML_scripts/postprocessing_scripts"
-echo "--Enter location to dump data: "
-read -r PATH_TO_DATA
 
 #Load modules
 module load miniforge3

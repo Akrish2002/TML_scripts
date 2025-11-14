@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+echo "-- This initialization script keeps computes U_1(U_g) from user supplied 
+values of rho1, mu1 and Re"
 
 echo "--Enter the following parameters: "
 

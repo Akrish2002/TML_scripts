@@ -1,3 +1,6 @@
+#This initialization script keeps computes U_1(U_g) from user supplied values of
+#rho1, mu1 and Re
+
 import numpy as np
 import matplotlib.pyplot as plt
 import initialize_1D_v2 as initialize_1D
@@ -34,8 +37,8 @@ def add_random_noise_based_ref(f, g):
     return g + noise
 
 def params(Re, mu, delta, rho, We):
-    u1 = (Re * mu)/delta #Re = (U1 * delta)/mu
-    sigma = (rho * u1 * u1 * delta)/We #We = (rho * u1 * u1 * delta)/sigma
+    u1 = (Re * mu)/(delta * rho)                                                #Re = (rho * U1 * delta)/mu
+    sigma = (rho * u1 * u1 * delta)/We                                          #We = (rho * u1 * u1 * delta)/sigma
     print("--U1=",u1, "--Sigma=", sigma)
     return u1, sigma
 
@@ -84,10 +87,10 @@ if __name__ == '__main__':
     U1  , U2   = 1., 0.
     V1  , V2   = 0., 0.
     yloc = np.pi
-    epsilon = 0.51*case.grid['dx']
-    delta = 2.*np.pi/100.
+    epsilon = 0.51 * case.grid['dx']
+    delta = 2. * np.pi/100.
     U1, sigma = params(Re, mu1, delta, rho1, We)
-    Ur = U2/U1
+    Ur = U2 / U1
 
     # Create custom initial conditions
     time_step = 0
@@ -114,7 +117,7 @@ if __name__ == '__main__':
     u       = np.zeros_like(case.grid['ycs'])
     u[idx1] = u1
     u[idx2] = u2
-    v       = phi1*V1 + (1. - phi1) * V2
+    v       = phi1 * V1 + (1. - phi1) * V2
 
     u1_t  = np.mean(u, axis=(0,2))
     alpha = np.mean(1 - (case.data[f'{time_step}']['phi_2']), axis=(0,2))

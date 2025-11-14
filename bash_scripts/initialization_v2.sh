@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+echo "--This initialization script keeps a constant U_1(U_g), that should be specified by the
+user during initialization. Honestly I do not know why the case is stable for a 
+lower U_1(U_g)"
 
 echo "--Enter the following parameters: "
 
@@ -20,11 +23,11 @@ echo "--ρ1 and ρ2: "
 read -r rho1 
 read -r rho2
 
-echo "--μ1 and μ2: "
-read -r mu1 
+echo "--μ2: "
 read -r mu2
 
-echo "--Re and We: "
+echo "--U1, Re and We: "
+read -r U1
 read -r Re 
 read -r We
 
@@ -40,17 +43,17 @@ nzsd="$nzsd"
 rho1="$rho1"
 rho2="$rho2"
 
-mu1="$mu1"
 mu2="$mu2"
 
+U1="$U1"
 Re="$Re"
 We="$We"
 
 export nx_g ny_g nz_g
 export nxsd nysd nzsd
 export rho1 rho2
-export mu1 mu2
-export Re We
+export mu2
+export U1 Re We
 
 sbatch create_timestep0_v2.sh
 
