@@ -1,3 +1,18 @@
+# AI Assistance Declaration:
+# Portions of this script were generated with the assistance of OpenAI ChatGPT (GPT-5.2).
+# The generated code has only been lightly tested for basic functionality.
+# Any errors, numerical inaccuracies, or unintended behavior must be rigorously
+# investigated and validated by the user. The generated sections have not undergone
+# manual review or verification beyond minimal execution checks.
+
+# AI Logic Attribution:
+# In a few instances, short code segments (one–two lines) were written by the author
+# using algorithmic logic and reasoning suggested by ChatGPT (GPT-5.2).
+# While the code implementation is entirely the author's, the underlying logic in
+# these cases was AI-informed. Full responsibility for correctness and usage lies
+# with the author.
+
+
 from mpi4py import MPI
 from FPCSLpy.case import LargeCase
 import numpy as np
