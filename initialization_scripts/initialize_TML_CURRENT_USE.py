@@ -4,36 +4,15 @@ import initialize_1D_v2 as initialize_1D
 import argparse
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-                                        description='Initialize grid parameters and solve for optimal c'
-                                    )
+    parser = argparse.ArgumentParser(description='Initialize grid parameters and solve for optimal c')
 
-    parser.add_argument(
-                            '--nx_g', type=int, required=True,
-                            help='Number of grid nodes in the x-direction')
+    parser.add_argument('--nx_g', type=int, required=True, help='Number of grid nodes in the x-direction')
+    parser.add_argument('--ny_g', type=int, required=True, help='Number of grid nodes in the x-direction')
+    parser.add_argument('--nz_g', type=int, required=True, help='Number of grid nodes in the x-direction')
 
-    parser.add_argument(
-                            '--ny_g', type=int, required=True,
-                            help='Number of grid nodes in the y-direction'
-                       )
-
-    parser.add_argument(
-                            '--nz_g', type=int, required=True,
-                            help='Number of grid nodes in the z-direction'
-                       )
-
-    parser.add_argument(
-                            '--nxsd', type=int, required=True,
-                       )
-
-    parser.add_argument(
-                            '--nysd', type=int, required=True,
-                       )
-
-    parser.add_argument(
-                            '--nzsd', type=int, required=True,
-                       )
-
+    parser.add_argument('--nxsd', type=int, required=True)
+    parser.add_argument('--nysd', type=int, required=True)
+    parser.add_argument('--nzsd', type=int, required=True)
 
     return parser.parse_args()
 
@@ -102,7 +81,6 @@ if __name__ == '__main__':
     phi2 = 1. - phi1
     rho  = phi1*rho1 + (1. - phi1)*rho2
     mu   = phi1*mu1  + (1. - phi1)*mu2
-    #mix1 = 0.5*(1.+np.tanh((case.grid['ycs']-yloc)/(2.*delta)))
     idx1  = np.where(case.grid['ycs']-yloc>=0.)
     idx2  = np.where(case.grid['ycs']-yloc<0.)
 
