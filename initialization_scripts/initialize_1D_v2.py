@@ -42,8 +42,6 @@ def momentum_thickness(Ug, u, dy, alpha=1):
     Returns:
       The computed momentum thickness.
     """
-    #print(alpha.shape, alpha.dtype)
-    #print(u.shape, u.dtype)
     integrand = alpha * (Ug - u) * u / (Ug*Ug)
     delta_theta = np.trapz(integrand, dx=dy)
     return delta_theta
@@ -75,25 +73,5 @@ def get_optimal_c(y, dy, y_ref, Ug, Ur, delta, initial_guess=3.26):
 
     return fsolve(f, initial_guess)[0]
 
-#if __name__ == '__main__':
-    # Example usage with input parameters.
-    # In practice, these values would be passed from initialize_tml.py.
-    
-    # Define input parameters
-    #y_min = 0
-    #y_max = 2 * np.pi
-    #ny = 1024
-    #y_ref = np.pi
-    #delta = 2 * np.pi / 100.
-    #
-    ## Define velocity parameters (these should match your simulation)
-    #Ug = 3.18309  # typically U1, the free-stream velocity
-    #Ur = 0.0      # for example, U2/U1; adjust as needed
-    #
-    ## Create the grid
-    #y, dy = initialize_array(y_min, y_max, ny)
-    #
-    ## Compute and print the optimal c
-    #c_optimal = get_optimal_c(y, dy, y_ref, Ug, Ur, delta)
-    #print("Optimal c:", c_optimal)
-
+if __name__ == '__main__':
+    print("--Not designed to run independently!")
