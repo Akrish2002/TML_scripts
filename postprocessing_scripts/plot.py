@@ -6,7 +6,7 @@ import os
 n128_data = "integrand_data_n128.csv"
 n256_data = "integrand_data_n256.csv"
 n512_data = "integrand_data_n512.csv"
-n1024_data = "integrand_data_n1024.csv"
+n1024_data = "growth_rate_data_n1024.csv"
 files = [["n128", "n256", "n512", "n1024"], [n128_data, n256_data, n512_data, n1024_data]]
 integrands = [["Time"], ["Momentum_Thickness", "VolFrac_Thickness", "Mixing_Thickness"]]
 
