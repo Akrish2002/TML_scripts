@@ -180,7 +180,7 @@ if __name__ == '__main__':
     wmean       = phi1 * W1 + (1. - phi1) * W2
 
     #Generating perturbations according to a specified spectrum
-    unoise, vnoise, wnoise = generate_perturbations(nz_g, ny_g, nx_g, dz, dy, dx, amp, delta, delta_u, seed)
+    unoise, vnoise, wnoise = generate_perturbations(nz_g, ny_g, nx_g, dz, dy, dx, amp, delta, delta_u)
     #Adding noise to mean
     u[idx1] = umean[idx1] + unoise[idx1]
     u[idx2] = umean[idx2] 
