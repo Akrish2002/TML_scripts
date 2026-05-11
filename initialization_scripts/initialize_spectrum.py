@@ -17,18 +17,20 @@ def parse_args():
 
     return parser.parse_args()
 
-def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, delta, delta_u):
+def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, amp, delta, delta_u, seed=0):
     """
     Generate a 3D divergence-free velocity perturbation field (u', v', w')
     with a specified energy spectrum.
     """
 
+    np.random.seed(seed)
+
     # Target perturbation amplitude.
     # Baltzer & Livescu prescribe 0.1 * Delta_U root-mean-square fluctuation
     # for each velocity component individually.
-    amp_u = 0.01 * delta_u
-    amp_v = 0.01 * delta_u
-    amp_w = 0.01 * delta_u
+    amp_u = amp * delta_u
+    amp_v = amp * delta_u
+    amp_w = amp * delta_u
 
     kx = 2.0 * math.pi * np.fft.fftfreq(Nx, d=dx)
     ky = 2.0 * math.pi * np.fft.fftfreq(Ny, d=dy)
@@ -51,14 +53,12 @@ def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, delta, delta_u):
     Lx = Nx * dx
     Ly = Ny * dy
     Lz = Nz * dz
-    k_eta = 0.5 * (Nx + Ny + Nz) * 2.0 * math.pi / max(Lx, Ly, Lz)
 
     E_k = np.zeros_like(k)
 
     # This avoids adding any energy to the zero-mode
     mask = k > 0
     kk   = k[mask]
-    #E_k[mask] = (kk / k0)**4 * np.exp(-2.0 * (kk / k0)**2)
     E_k[mask] = (kk / k0)**4 * np.exp(-2.0 * (kk / k0)**2)
 
     theta        = 2.0 * np.pi * np.random.rand(3, Nz, Ny, Nx)
@@ -140,13 +140,14 @@ if __name__ == '__main__':
     W1  , W2   = 0., 0.
     yloc = np.pi
     epsilon = 0.51 * case.grid['dx']
-    delta = 2. * np.pi/100.
-    Re = 200.
-    We = 20.
+    delta   = 2. * np.pi/100.
+    Re      = 200.
+    We      = 20.
 
     U1, sigma   = params(Re, mu1, delta, rho1, We)
     Ur          = U2/U1
     delta_u     = abs(U1 - U2)
+    amp         = 0.05
 
     # Create custom initial conditions
     time_step = 0
@@ -176,12 +177,8 @@ if __name__ == '__main__':
     vmean       = phi1 * V1 + (1. - phi1) * V2
     wmean       = phi1 * W1 + (1. - phi1) * W2
 
-    #u1_t = np.mean(umean, axis=(0,2))
-    #alpha = np.mean(1-(case.data[f'{time_step}']['phi_2']), axis=(0,2))
-    #print("--Normalized momentum thickness: ", initialize_1D.momentum_thickness(U1, u1_t, ((2*np.pi)/nx_g), alpha)/delta)
-
     #Generating perturbations according to a specified spectrum
-    unoise, vnoise, wnoise = generate_perturbations(nz_g, ny_g, nx_g, dz, dy, dx, delta, delta_u)
+    unoise, vnoise, wnoise = generate_perturbations(nz_g, ny_g, nx_g, dz, dy, dx, amp, delta, delta_u, seed)
     #Adding noise to mean
     u[idx1] = umean[idx1] + unoise[idx1]
     u[idx2] = umean[idx2] 

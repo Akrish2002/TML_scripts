@@ -11,7 +11,6 @@ import sys
 
 def parse_args():
     
-    #1. Filename
     filenameparser = argparse.ArgumentParser(description='Filename')
     filenameparser.add_argument('--fname', type=str, required=True, help='Filename for .csv')
 
@@ -40,26 +39,6 @@ def grep_timestep(path = "."):
         fs, step, ls = min(nums), nums[1] - nums[0], max(nums)
     
     return fs, step, ls
-
-
-def writetoCSV(time_steps, mt, pt, mixt, FILENAME):
-    """ To write data to CSV file
-    
-    Args:
-        
-    
-    Return:
-        CSV file populated with data
-    """
-
-    with open(f"{FILENAME}.csv", "w", newline='') as f:
-        writer = csv.writer(f)
-
-        writer.writerow(["Time", "Momentum", "Phi", "Mixing"])
-
-        for t, m, phi, mixing in zip(time_steps, mt, pt, mixt):
-            #writer.writerow([(t * dt * U_g)/delta, m, phi, mixing])
-            writer.writerow([t, m, phi, mixing])
 
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
@@ -183,8 +162,6 @@ def case_update(ctr_file):
     """
 
     case = LargeCase(path='./.')
-    #if case.rank == 0:
-        #print("Starting")
 
     #Grid
     nx_g = int(grep_ctr("nx"))
@@ -206,7 +183,6 @@ def case_update(ctr_file):
     to_update_parameters = case.parameters
     to_update_parameters['grid']['x_max']                                       = a * np.pi
     to_update_parameters['grid']['y_max']                                       = b * np.pi
-    #to_update_parameters['grid']['z_max']                                       = 5 * ((2 * np.pi) / nx_g)
     to_update_parameters['grid']['z_max']                                       = c * np.pi
     to_update_parameters['grid']['nx']                                          = nx_g
     to_update_parameters['grid']['ny']                                          = ny_g
@@ -219,7 +195,6 @@ def case_update(ctr_file):
     #Update and check parameters
     case.update_parameters(to_update_parameters)
 
-    #dx, dy, dz = case.grid['dx'], case.grid['dy'], case.grid['dz']
     dx = (case.parameters['grid']['x_max'] - case.parameters['grid']['x_min']) / case.parameters['grid']['nx']
     dy = (case.parameters['grid']['y_max'] - case.parameters['grid']['y_min']) / case.parameters['grid']['ny']
     dz = (case.parameters['grid']['z_max'] - case.parameters['grid']['z_min']) / case.parameters['grid']['nz']
@@ -312,6 +287,10 @@ def main():
     Return:
 
     """
+
+    #Filename
+    args = parse_args()
+    fname = args.fname
     
     #Variables
     delta_theta_g   = []
@@ -333,15 +312,11 @@ def main():
      case)             = case_update(ctr_file)
     ny_g_half          = int(ny_g / 2)
 
-    #For time-steps_{i}                                                         
-    time_steps = [i for i in range(start_ts, end_ts, step_ts)]
-    #time_steps = [i for i in range(32000, end_ts, step_ts)]                     --> Gives me error
-    #time_steps = [i for i in range(100000, 120000, 2000)]
+    time_steps   = [i for i in range(start_ts, end_ts, step_ts)]
+    t_normalized = [(time_step * dt * U_g) / delta for time_step in time_steps]
     
-    #Debug
-    #counter=0
     if case.comm.Get_rank() == 0:
-        fname = f"integrand_data_n{nx_g}.csv"
+        #fname = f"integrand_data_n{nx_g}.csv"
         write_header = not os.path.exists(fname) or os.path.getsize(fname) == 0
         f = open(fname, "a", newline="")
         w = csv.writer(f)
@@ -353,7 +328,7 @@ def main():
     momentum_thickness    = []
     phi_thickness         = [] 
     mixinglayer_thickness = []
-    for time_step in time_steps:
+    for i, time_step in enumerate(time_steps):
 
         (mt, pt, mixt) = split_timestep_over_cores(delta, U_g, dt, delta_u,
                     
@@ -370,23 +345,14 @@ def main():
         phi_thickness.append(pt)
         mixinglayer_thickness.append(mixt)
         
-        #Debug
         if case.rank == 0:
-            w.writerow([time_step, mt, pt, mixt])
+            w.writerow([t_normalized[i], mt, pt, mixt])
             f.flush()               # push to OS buffers
             os.fsync(f.fileno()) 
         #Debug
         #counter+=1
 
-    #return time_steps, momentum_thickness, phi_thickness, mixinglayer_thickness
-
 
 if __name__ == "__main__":
-    #This is for the bash script
-    if len(sys.argv) > 1:
-        ny_g = int(grep_ctr("nysd"))
-        print(ny_g)
-
-    else:
-        main()
+    main()
 
