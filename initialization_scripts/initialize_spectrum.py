@@ -15,6 +15,8 @@ def parse_args():
     parser.add_argument('--nysd', type=int, required=True)
     parser.add_argument('--nzsd', type=int, required=True)
 
+    parser.add_argument('--amp', type=float, required=True)
+
     return parser.parse_args()
 
 def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, amp, delta, delta_u, seed=0):
@@ -111,6 +113,7 @@ if __name__ == '__main__':
     args = parse_args()
     nx_g, ny_g, nz_g = args.nx_g, args.ny_g, args.nz_g
     nxsd, nysd, nzsd = args.nxsd, args.nysd, args.nzsd
+    amp              = args.amp
 
     dx = (2. * np.pi) / nx_g
     dy = (2. * np.pi) / ny_g
@@ -147,7 +150,6 @@ if __name__ == '__main__':
     U1, sigma   = params(Re, mu1, delta, rho1, We)
     Ur          = U2/U1
     delta_u     = abs(U1 - U2)
-    amp         = 0.05
 
     # Create custom initial conditions
     time_step = 0
