@@ -17,6 +17,9 @@ def parse_args():
 
     parser.add_argument('--amp', type=float, required=True)
 
+    parser.add_argument('--Re', type=float, required=True)
+    parser.add_argument('--We', type=float, required=True)
+
     return parser.parse_args()
 
 def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, amp, delta, delta_u, seed=0):
@@ -144,8 +147,10 @@ if __name__ == '__main__':
     yloc = np.pi
     epsilon = 0.51 * case.grid['dx']
     delta   = 2. * np.pi/100.
-    Re      = 200.
-    We      = 20.
+    #Re      = 200.
+    #We      = 10.
+    Re      = args.Re
+    We      = args.We
 
     U1, sigma   = params(Re, mu1, delta, rho1, We)
     Ur          = U2/U1
