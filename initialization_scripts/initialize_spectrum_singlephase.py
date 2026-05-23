@@ -193,15 +193,14 @@ if __name__ == '__main__':
     idx1  = np.where(case.grid['ycs'] - yloc>=0.)
     idx2  = np.where(case.grid['ycs'] - yloc<0.)
 
-    c = initialize_1D.get_optimal_c(case.grid['ycs'], (2 * np.pi/nx_g), yloc, U1, delta_U, delta)
+    c = initialize_1D.get_optimal_c(case.grid['ycs'], (2 * np.pi/ny_g), yloc, U1, delta_U, delta)
     print("--Computed c val: ", c)
 
     ones  = np.ones_like(case.grid['ycs'])
     umean = np.zeros_like(case.grid['ycs'])
     u     = np.zeros_like(case.grid['ycs'])
 
-    #umean = delta_U * 0.5 * np.tanh((case.grid['ycs'] - yloc) / (c * delta)) 
-    umean = delta_U * 0.5 * np.tanh((case.grid['ycs'] - yloc) / (2 * delta)) 
+    umean = delta_U * 0.5 * np.tanh((case.grid['ycs'] - yloc) / (c * delta)) 
     vmean = phi1 * V1 + (1. - phi1) * V2
     wmean = phi1 * W1 + (1. - phi1) * W2
 
@@ -213,8 +212,7 @@ if __name__ == '__main__':
     v = vmean + vnoise
     w = wmean + wnoise
 
-    u1_t = np.mean(umean, axis=(0,2))
-    #alpha = np.mean(case.data[f'{time_step}']['phi_1'], axis=(0,2))
+    u1_t = np.mean(u, axis=(0,2))
     alpha = np.mean(phi2, axis=(0,2))
     print("--Normalized momentum thickness: ", initialize_1D.momentum_thickness(U1, u1_t, ((2 * np.pi) / ny_g), delta_U) / delta)
 
