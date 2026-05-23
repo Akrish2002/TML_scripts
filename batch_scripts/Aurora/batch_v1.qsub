@@ -1,0 +1,23 @@
+#!/bin/bash 
+#PBS -A BubbleLaden
+#PBS -N n512
+#PBS -l select=16
+#PBS -l walltime=08:00:00
+#PBS -l filesystems=home:flare
+#PBS -q capacity
+#PBS -m be
+
+cd ${PBS_O_WORKDIR}
+
+NNODES=`wc -l < $PBS_NODEFILE`
+NRANKS=8 #Number of MPI ranks per node
+NDEPTH=1 #Number of hardware threads per rank
+
+NTOTRANKS=$(( NNODES * NRANKS))
+
+echo "NUM_OF_NODES= ${NNODES} RANKS_PER_NODE= ${NRANKS} TOTAL_NUM_RANKS= ${NTOTRANKS}"
+
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+mpiexec -n ${NTOTRANKS} -ppn ${NRANKS} --depth=${NDEPTH} --cpu-bind depth gpu_tile_compact.sh ~/executables/bin/exaflow3D incompressible_tml.ctr > log_n512
