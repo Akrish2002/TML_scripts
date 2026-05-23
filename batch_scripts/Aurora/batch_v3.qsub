@@ -1,0 +1,52 @@
+#!/bin/bash 
+#!/bin/bash 
+#PBS -A BubbleLaden
+#PBS -N n1024_v2
+#PBS -l select=43
+#PBS -l walltime=00:40:00
+#PBS -l filesystems=home:flare
+#PBS -q debug-scaling
+#PBS -m be
+
+cd ${PBS_O_WORKDIR}
+INPUT=incompressible_tml.ctr 
+EXEC=~/executables/bin/exaflow3D
+
+NNODES=`wc -l < $PBS_NODEFILE`
+NRANKS_PER_NODE=12 #Number of MPI ranks per node
+NDEPTH=1 #Number of hardware threads per rank
+
+#NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+NTOTRANKS=512
+
+echo "PBS_JOBID=${PBS_JOBID}"                                                   
+echo "PBS_O_WORKDIR=${PBS_O_WORKDIR}"                                           
+
+echo -e "\nNNODES=${NNODES}"                                                         
+echo "NRANKS_PER_NODE=${NRANKS_PER_NODE}"                                       
+echo "NTOTRANKS=${NTOTRANKS}"                                                   
+echo "NDEPTH=${NDEPTH}"                                                         
+
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+#Update incompressible_tml.ctr
+latest_time_step=$(ls -1t time_step-* 2>/dev/null | head -n 1 || true)
+if [[ -n "${latest_time_step}" ]]; then                                         
+    new_time_step=$(echo "$latest_time_step" | grep -Po '\d+')
+                                                                                
+    if [[ -n "${new_time_step}" ]]; then                                        
+        echo -e "\nLatest file: ${latest_time_step}"                                 
+        echo "Updating ${INPUT}: time_step = ${new_time_step}"                  
+        sed -i "s/time_step = .*/time_step = $new_time_step/" "$INPUT"
+    else                                                                        
+        echo "WARNING: Could not parse timestep from ${latest_time_step}"       
+    fi                                                                          
+else                                                                            
+    echo "No time_step-* file found; leaving ${INPUT} unchanged"                
+fi
+
+logfile="./log/log_$(date +%Y-%m-%d_%H-%M-%S).out"
+
+mpiexec -n ${NTOTRANKS} -ppn ${NRANKS_PER_NODE} --depth=${NDEPTH} --cpu-bind=depth gpu_tile_compact.sh ${EXEC} ${INPUT} > ${logfile}
+
