@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import initialize_1D_v2 as initialize_1D
+import initialize_1D_singlephase as initialize_1D
 import argparse
 import math
 
@@ -15,17 +15,15 @@ def parse_args():
     parser.add_argument('--nysd', type=int, required=True)
     parser.add_argument('--nzsd', type=int, required=True)
 
-    parser.add_argument('--amp', type=float, required=True)
+    parser.add_argument('--amp',     type=float, required=True)
 
-    parser.add_argument('--U1', type=float, required=True)
-    parser.add_argument('--Re', type=float, required=True)
-    parser.add_argument('--m',  type=float, required=True)
+    parser.add_argument('--Re',      type=float, required=True)
+    parser.add_argument('--delta_U', type=float, required=True)
 
-    parser.add_argument('--We', type=float, required=True)
 
     return parser.parse_args()
 
-def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, amp, delta, delta_u, seed=0):
+def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, amp, delta, delta_U, seed=0):
     """
     Generate a 3D divergence-free velocity perturbation field (u', v', w')
     with a specified energy spectrum.
@@ -36,9 +34,9 @@ def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, amp, delta, delta_u, seed=0):
     # Target perturbation amplitude.
     # Baltzer & Livescu prescribe 0.1 * Delta_U root-mean-square fluctuation
     # for each velocity component individually.
-    amp_u = amp * delta_u
-    amp_v = amp * delta_u
-    amp_w = amp * delta_u
+    amp_u = amp * delta_U
+    amp_v = amp * delta_U
+    amp_w = amp * delta_U
 
     kx = 2.0 * math.pi * np.fft.fftfreq(Nx, d=dx)
     ky = 2.0 * math.pi * np.fft.fftfreq(Ny, d=dy)
@@ -100,18 +98,19 @@ def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, amp, delta, delta_u, seed=0):
 
     return u, v, w
 
-#def params(Re, mu, delta, rho, We):
+#def params(Re, mu, delta, rho):
 #
 #    #Re = (U1 * rho * delta)/mu
 #    u1 = (Re * mu)/(delta * rho)
 #
 #    #We = (rho * u1 * u1 * delta)/sigma
-#    sigma = (rho * u1 * u1 * delta)/We 
+#    #sigma = (rho * u1 * u1 * delta)/We 
 #
-#    print("--U1=",u1, "--Sigma=", sigma)
-#    return u1, sigma
+#    #print("--U1=",u1, "--Sigma=", sigma)
+#    print("--U1=",u1)
+#    return u1
 
-def params(rho, U1, U2, delta, Re, m, We):
+def params(rho, delta_U, delta, Re):
 
     '''
     m      --> Ratio of mu2 / mu1
@@ -121,26 +120,16 @@ def params(rho, U1, U2, delta, Re, m, We):
     We     --> Weber number as defined for fluid1
     '''
 
-    Re1     = Re
-    We1     = We
-    rho1    = rho
-    delta_U = np.abs(U1 - U2)
-
     #1.For Re
     #1.1 Compute mu_g
-    mu1 = (rho1 * delta_U * delta) / Re1
+    mu = (rho * delta_U * delta) / Re
     
-    #1.2 Compute mu_l
-    mu2 = m * mu1
-    
-    #2. For We_g
-    sigma = (rho1 * delta_U * delta_U * delta) / We1
-    
-    print("--User entered U1: ", U1)
-    print("--Computed mu1, mu2: ", mu1, mu2)
-    print("--Computed sigma: ", sigma)
+    print("--User entered delta_U: ", delta_U)
+    print("--Computed mu1 & mu2: ", mu)
+    mu1 = mu
+    mu2 = mu
 
-    return mu1, mu2, sigma
+    return mu1, mu2
 
 if __name__ == '__main__':
     from FPCSLpy.case import Case
@@ -173,21 +162,22 @@ if __name__ == '__main__':
 
     #Parameters
     rho1, rho2 = 1., 1.
-    mu1 , mu2  = 1.e-3, 5.e-2
+    #mu changes!
+    mu1 , mu2  = 1., 1.
     U1  , U2   = 1., 0.
     V1  , V2   = 0., 0.
     W1  , W2   = 0., 0.
     yloc = np.pi
     epsilon = 0.51 * case.grid['dx']
     delta   = 2. * np.pi/100.
-    U1      = args.U1
-    Re      = args.Re
-    m       = args.m
-    We      = args.We
 
-    mu1, mu2, sigma = params(rho1, U1, U2, delta, Re, m, We)
-    Ur              = U2/U1
-    delta_u         = abs(U1 - U2)
+    Re      = args.Re
+    delta_U = args.delta_U
+    sigma   = 0
+
+    mu1, mu2 = params(rho1, delta_U, delta, Re)
+    U1 =  0.5 * delta_U
+    U2 = -0.5 * delta_U
 
     #Create custom initial conditions
     time_step = 0
@@ -195,39 +185,38 @@ if __name__ == '__main__':
     case.create_default_fields(time_step)
     custom = case.data[f'{time_step}']
 
-    zeros = np.zeros_like(case.grid['xcs'])
-    ones  = np.ones_like(case.grid['xcs'])
+    phi1  = np.ones_like(case.grid['ycs'])
+    phi2  = np.ones_like(case.grid['ycs'])
+    print("--Shape of phi1 and phi2: ", phi1.shape, phi2.shape)
+    rho   = phi1 * rho1 + (1. - phi1) * rho2
+    mu    = phi1 * mu1  + (1. - phi1) * mu2
+    idx1  = np.where(case.grid['ycs'] - yloc>=0.)
+    idx2  = np.where(case.grid['ycs'] - yloc<0.)
 
-    phi1 = 0.5*(1.+np.tanh((case.grid['ycs']-yloc)/(2.*epsilon)))
-    phi2 = 1. - phi1
-    rho  = phi1*rho1 + (1. - phi1)*rho2
-    mu   = phi1*mu1  + (1. - phi1)*mu2
-    idx1  = np.where(case.grid['ycs']-yloc>=0.)
-    idx2  = np.where(case.grid['ycs']-yloc<0.)
-
-    c = initialize_1D.get_optimal_c(case.grid['ycs'], (2*np.pi/nx_g), yloc, U1, Ur, delta)
+    c = initialize_1D.get_optimal_c(case.grid['ycs'], (2 * np.pi/nx_g), yloc, U1, delta_U, delta)
     print("--Computed c val: ", c)
 
-    u1          = (U1-Ur) * np.tanh((case.grid['ycs'][idx1]-yloc)/(c * delta)) + Ur
-    u2          = Ur * np.tanh((case.grid['ycs'][idx2]-yloc)/(c * delta)) + Ur
-    umean       = np.zeros_like(case.grid['ycs'])
-    u           = np.zeros_like(case.grid['ycs'])
-    umean[idx1] = u1
-    umean[idx2] = u2
-    vmean       = phi1 * V1 + (1. - phi1) * V2
-    wmean       = phi1 * W1 + (1. - phi1) * W2
+    ones  = np.ones_like(case.grid['ycs'])
+    umean = np.zeros_like(case.grid['ycs'])
+    u     = np.zeros_like(case.grid['ycs'])
+
+    #umean = delta_U * 0.5 * np.tanh((case.grid['ycs'] - yloc) / (c * delta)) 
+    umean = delta_U * 0.5 * np.tanh((case.grid['ycs'] - yloc) / (2 * delta)) 
+    vmean = phi1 * V1 + (1. - phi1) * V2
+    wmean = phi1 * W1 + (1. - phi1) * W2
 
     #Generating perturbations according to a specified spectrum
-    unoise, vnoise, wnoise = generate_perturbations(nz_g, ny_g, nx_g, dz, dy, dx, amp, delta, delta_u)
+    unoise, vnoise, wnoise = generate_perturbations(nz_g, ny_g, nx_g, dz, dy, dx, amp, delta, delta_U)
+
     #Adding noise to mean
-    u[idx1] = umean[idx1] + unoise[idx1]
-    u[idx2] = umean[idx2] 
+    u = umean + unoise
     v = vmean + vnoise
     w = wmean + wnoise
 
     u1_t = np.mean(umean, axis=(0,2))
-    alpha = np.mean(1-(case.data[f'{time_step}']['phi_2']), axis=(0,2))
-    print("--Normalized momentum thickness: ", initialize_1D.momentum_thickness(U1, u1_t, ((2*np.pi)/nx_g), alpha)/delta)
+    #alpha = np.mean(case.data[f'{time_step}']['phi_1'], axis=(0,2))
+    alpha = np.mean(phi2, axis=(0,2))
+    print("--Normalized momentum thickness: ", initialize_1D.momentum_thickness(U1, u1_t, ((2 * np.pi) / ny_g), delta_U) / delta)
 
     print("--U min & max val: ", u.min(), u.max())
     print("--V min & max val: ", v.min(), v.max())
