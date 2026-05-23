@@ -1,44 +1,47 @@
-from FPCSLpy.case import LargeCase
-from mpi4py import MPI
+from concurrent.futures import ProcessPoolExecutor
+from FPCSLpy.case import Case
 import numpy as np
 import os
 import csv
 import argparse
 import re, pathlib
-from pathlib import Path
-import sys
 
 
 def parse_args():
-    
-    filenameparser = argparse.ArgumentParser(description='Filename')
-    filenameparser.add_argument('--fname', type=str, required=True, help='Filename for .csv')
-
-    return filenameparser.parse_args()
-
-
-def grep_timestep(path = "."):
-    """ Grepping time steps to calculate first step, step and last step
+    """ Parse arguments from command line
     
     Args:
     
     Return:
-    
+        argparse.Namespace: Parsed arguments with attributes:
+            nx_g : Number of grid nodes in x
+            ny_g : Number of grid nodes in y
+            nz_g : Number of grid nodes in z
+
+    Examples:
+
+        $ python3 postprocess.py --nx_g 1024 --ny_g 1024 --nz_g 1024
     """
-    
-    root = Path(path)
-    nums = []
-    
-    for p in root.iterdir():
-        m = re.fullmatch(r"time_step-(\d+)", p.name)
-        if m:
-            nums.append(int(m.group(1)))
-    
-    nums.sort()
-    if nums:
-        fs, step, ls = min(nums), nums[1] - nums[0], max(nums)
-    
-    return fs, step, ls
+
+    parser = argparse.ArgumentParser(
+                                        description='Grid'
+                                    )
+
+    parser.add_argument(
+                            '--nx_g', type=int, required=True,
+                            help='Number of grid nodes in the x-direction'
+                       )
+
+    parser.add_argument(
+                            '--ny_g', type=int, required=True,
+                            help='Number of grid nodes in the y-direction'
+                       )
+
+    parser.add_argument(
+                            '--nz_g', type=int, required=True,
+                            help='Number of grid nodes in the z-direction'
+                       )
+    return parser.parse_args()
 
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
@@ -102,7 +105,7 @@ def momentum_thickness(U, u_bar, delta_u, alpha, dy, delta):
     """
 
     integrand                = ((alpha) * (U - u_bar) * (u_bar))/(delta_u * delta_u)
-    delta_theta_g            = (np.trapezoid(integrand, dx=dy))
+    delta_theta_g            = (np.trapz(integrand, dx=dy))
     delta_theta_g_normalized = delta_theta_g / delta
 
     return delta_theta_g_normalized
@@ -122,7 +125,7 @@ def phi_thickness(alpha, nx_g_half, dy):
 
     integrand_phi           = alpha
     integrand_phi_subset    = integrand_phi[:nx_g_half]
-    delta_phi_g             = np.trapezoid(integrand_phi_subset, dx=dy)
+    delta_phi_g             = np.trapz(integrand_phi_subset, dx=dy)
     
     return delta_phi_g
 
@@ -139,7 +142,7 @@ def mixinglayer_thickness(alpha, dy):
     """
     
     integrand_mixing = alpha * (1 - alpha)
-    delta_mixing     = np.trapezoid(integrand_mixing, dx=dy)
+    delta_mixing     = np.trapz(integrand_mixing, dx=dy)
     
     return delta_mixing
     
@@ -161,7 +164,7 @@ def case_update(ctr_file):
     
     """
 
-    case = LargeCase(path='./.')
+    case = Case(path='./.')
 
     #Grid
     nx_g = int(grep_ctr("nx"))
@@ -184,6 +187,7 @@ def case_update(ctr_file):
     to_update_parameters['grid']['x_max']                                       = a * np.pi
     to_update_parameters['grid']['y_max']                                       = b * np.pi
     to_update_parameters['grid']['z_max']                                       = c * np.pi
+    #to_update_parameters['grid']['z_max']                                       = 5 * ((2 * np.pi) / nx_g)
     to_update_parameters['grid']['nx']                                          = nx_g
     to_update_parameters['grid']['ny']                                          = ny_g
     to_update_parameters['grid']['nz']                                          = nz_g
@@ -195,24 +199,21 @@ def case_update(ctr_file):
     #Update and check parameters
     case.update_parameters(to_update_parameters)
 
-    dx = (case.parameters['grid']['x_max'] - case.parameters['grid']['x_min']) / case.parameters['grid']['nx']
-    dy = (case.parameters['grid']['y_max'] - case.parameters['grid']['y_min']) / case.parameters['grid']['ny']
-    dz = (case.parameters['grid']['z_max'] - case.parameters['grid']['z_min']) / case.parameters['grid']['nz']
+    dx, dy, dz = case.grid['dx'], case.grid['dy'], case.grid['dz']
 
-    return  nx_g, ny_g, nz_g, dx, dy, dz, case
+    return  nx_g, ny_g, nz_g,   \
+            dx, dy, dz,         \
+            case
 
 
-def split_timestep_over_cores(delta, U_g, dt, delta_u,
+def call_cores( delta, U_g, dt, delta_u,
                 
-                              nx_g, ny_g, nz_g,
-                              ny_g_half,
-                              dx, dy, dz,
-                              case,
-                              
-                              time_step,
-
-                              #Debug
-                              counter=0):
+                nx_g, ny_g, nz_g,
+                nx_g_half,
+                dx, dy, dz,
+                case,
+                
+                time_step):
     """
     
     Args:
@@ -221,62 +222,15 @@ def split_timestep_over_cores(delta, U_g, dt, delta_u,
     
     """
 
-    #Change the arguement to this fn to something passed from main
-    case.distribute_block_list_axis_stack(1)
-    filtered_block_list = case.filtered_rank_block_list
+    case.read_time_steps([time_step], to_interpolate=True)
+    u = case.data[f'{time_step}']['u']
 
-    #Hardcoding with nxsd since I see that it has z-x arrangement, change it later
-    nxsd = int(grep_ctr("nxsd"))
-    nysd = int(grep_ctr("nysd"))
-    nzsd = int(grep_ctr("nzsd"))
-
-    #Maybe change this from being a hardcoded size?
-    a = int(nx_g / nxsd)
-    b = int(ny_g / nysd)
-    c = int(nz_g / nzsd)
-    u_block     = np.empty((a, b, c, nzsd, nxsd))
-    alpha_block = np.empty((a, b, c, nzsd, nxsd))
-
-    for i in range(nxsd):
-        for k in range(nzsd): 
-            nxr, nyr, nzr = case.get_nxrnyrnzr_from_nr(filtered_block_list[i * nzsd + k])
-            block         = case.read_block(time_step, nxr, nyr, nzr, to_read=['u', 'phi_2'], to_interpolate=True)
-            u     = block['u']
-            phi_2 = block['phi_2']
-            
-            u_block[..., k, i]     = u    
-            alpha_block[..., k, i] = 1 - phi_2    
-            
-            del(block)
-
-    #Averaging
-    #Could you once again check why you are averaging out the alpha?
-    u_bar = np.mean(u_block, axis=(0, 2, 3, 4)) 
-    alpha = np.mean(alpha_block, axis=(0, 2, 3, 4)) 
+    u_bar = np.mean(u, axis=(0, 2))                                             #Avg along x and z since it is periodic
+    alpha = np.mean(1 - (case.data[f"{time_step}"]["phi_2"]), axis=(0, 2))      #1 - phi_2
     
-    #Clumping for global u_profile
-    parts_u     = case.comm.gather(u_bar, root=0)
-    parts_alpha = case.comm.gather(alpha, root=0)
-    
-    if(case.rank == 0):
-        global_u_bar = np.concatenate(parts_u, axis=0)
-        global_alpha = np.concatenate(parts_alpha, axis=0)
-
-        global_mt    = momentum_thickness(U_g, global_u_bar, delta_u, global_alpha, dy, delta)
-        global_pt    = phi_thickness(global_alpha, ny_g_half, dy)
-        global_mixt  = mixinglayer_thickness(global_alpha, dy)
-    
-        res = global_mt, global_pt, global_mixt
-        
-        #Debug
-        print(res, flush=True)
-        #print(counter, flush=True)
- 
-    else:
-        res = None
-
-    res = case.comm.bcast(res, root=0)
-    return res
+    return  momentum_thickness(U_g, u_bar, delta_u, alpha, dy, delta), \
+            phi_thickness(alpha, nx_g_half, dy), \
+            mixinglayer_thickness(alpha, dy)
 
 
 def main():
@@ -287,10 +241,6 @@ def main():
     Return:
 
     """
-
-    #Filename
-    args = parse_args()
-    fname = args.fname
     
     #Variables
     delta_theta_g   = []
@@ -301,58 +251,40 @@ def main():
     U_l             = 0.
     delta_u         = U_g - U_l
 
-    dt              = grep_ctr("dt")
+    dt              = 0.00025
 
-    (start_ts, step_ts, end_ts) = grep_timestep()
+    cores           = 15
+
+    start_ts        = 0
+    step_ts         = 800
+    end_ts          = 31200
 
     ctr_file        = "incompressible_tml.ctr"
 
     (nx_g, ny_g, nz_g,
      dx, dy, dz,       
      case)             = case_update(ctr_file)
-    ny_g_half          = int(ny_g / 2)
+    nx_g_half          = int(nx_g / 2)
 
-    time_steps   = [i for i in range(start_ts, end_ts, step_ts)]
-    t_normalized = [(time_step * dt * U_g) / delta for time_step in time_steps]
-    
-    if case.comm.Get_rank() == 0:
-        #fname = f"integrand_data_n{nx_g}.csv"
-        write_header = not os.path.exists(fname) or os.path.getsize(fname) == 0
-        f = open(fname, "a", newline="")
-        w = csv.writer(f)
-        if write_header:
-            w.writerow(["TimeStep", "Momentum", "Phi", "Mixing"])
-    else:
-        f = w = None
+    #For time-steps_{i}
+    time_steps = [i for i in range(start_ts, end_ts, step_ts)]
 
-    momentum_thickness    = []
-    phi_thickness         = [] 
-    mixinglayer_thickness = []
-    for i, time_step in enumerate(time_steps):
+    with ProcessPoolExecutor(max_workers=cores) as ex: 
+         futures  = [ex.submit(call_cores, 
 
-        (mt, pt, mixt) = split_timestep_over_cores(delta, U_g, dt, delta_u,
-                    
-                                                   nx_g, ny_g, nz_g,
-                                                   ny_g_half,
-                                                   dx, dy, dz,
-                                                   case,
-                                                   
-                                                   time_step
-                                                    
-                                                   #Debug
-                                                   )
-        momentum_thickness.append(mt)
-        phi_thickness.append(pt)
-        mixinglayer_thickness.append(mixt)
-        
-        if case.rank == 0:
-            w.writerow([t_normalized[i], mt, pt, mixt])
-            f.flush()               # push to OS buffers
-            os.fsync(f.fileno()) 
-        #Debug
-        #counter+=1
+                    delta, U_g, dt, delta_u,
+                                    
+                    nx_g, ny_g, nz_g,
+                    nx_g_half,
+                    dx, dy, dz,
+                    case,
+                                    
+                    time_step) for time_step in time_steps]
+ 
+    return futures
 
 
 if __name__ == "__main__":
-    main()
-
+    futures = main()
+    results = np.array([f.result() for f in futures])
+    print(results)
