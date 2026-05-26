@@ -7,6 +7,7 @@ if __name__ == "__main__":
                         choices=[
                             "mean_flow_profile",
                             "TKE",
+                            "dissipation",
                             "reynolds_stresses",
                             "total_dissipation_of_TKE",
                             "spectra",
@@ -36,6 +37,12 @@ if __name__ == "__main__":
         if args.time_step is None:
             parser.error("--time_step is required for TKE")
         TKE(args)
+
+    elif args.function == "dissipation":
+        from pyscripts.dissipation import dissipation
+        if args.time_step is None:
+            parser.error("--time_step is required for dissipation")
+        dissipation(args)
 
     elif args.function == "reynolds_stresses":
         from pyscripts.reynolds_stresses import compute_reynolds_stresses

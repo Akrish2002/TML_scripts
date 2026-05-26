@@ -13,6 +13,7 @@ if __name__ == "__main__":
     parser.add_argument("--function", required=True,
                         choices=[
                             "mean_flow_profile",
+                            "dissipation",
                             "TKE",
                             "reynolds_stresses",
                             "total_dissipation_of_TKE",
@@ -35,6 +36,9 @@ if __name__ == "__main__":
 
     elif args.function == "TKE":
         plot_TKE(args)
+
+    elif args.function == "dissipation":
+        plot_dissipation(args)
 
     elif args.function == "reynolds_stresses":
         plot_reynolds_stresses(args)
