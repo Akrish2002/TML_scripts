@@ -186,7 +186,7 @@ if __name__ == '__main__':
     custom = case.data[f'{time_step}']
 
     phi1  = np.ones_like(case.grid['ycs'])
-    phi2  = np.ones_like(case.grid['ycs'])
+    phi2  = np.zeros_like(case.grid['ycs'])
     print("--Shape of phi1 and phi2: ", phi1.shape, phi2.shape)
     rho   = phi1 * rho1 + (1. - phi1) * rho2
     mu    = phi1 * mu1  + (1. - phi1) * mu2
@@ -214,7 +214,7 @@ if __name__ == '__main__':
 
     u1_t = np.mean(u, axis=(0,2))
     alpha = np.mean(phi2, axis=(0,2))
-    print("--Normalized momentum thickness: ", initialize_1D.momentum_thickness(U1, u1_t, ((2 * np.pi) / ny_g), delta_U) / delta)
+    print("--Normalized momentum thickness after adding pertubation: ", initialize_1D.momentum_thickness(U1, u1_t, ((2 * np.pi) / ny_g), delta_U) / delta)
 
     print("--U min & max val: ", u.min(), u.max())
     print("--V min & max val: ", v.min(), v.max())

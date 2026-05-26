@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import initialize_1D_v2 as initialize_1D
+import initialize_1D 
 import argparse
 import math
 
