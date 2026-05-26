@@ -1,0 +1,51 @@
+#!/bin/bash -l
+#PBS -A BubbleLaden
+#PBS -N n1024_Multiple
+#PBS -l select=256
+#PBS -l walltime=12:00:00
+#PBS -l filesystems=home:flare
+#PBS -q prod
+#PBS -m be
+#PBS -j oe
+
+PARENT_DIR="$HOME/member-work/incompressible_tml/temp/run_cpu_binding/temp_2"
+SPHRM_DIR="$PARENT_DIR/SPHRM"
+SPH_DIR="$PARENT_DIR/SPH"
+WE05_DIR="$PARENT_DIR/WE05"
+WE10_DIR="$PARENT_DIR/WE10"
+
+EXEC="${HOME}/executables/bin/exaflow3D"
+INPUT="incompressible_tml.ctr"
+
+export MPICH_GPU_SUPPORT_ENABLED=1
+export OMP_NUM_THREADS=1
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+#Assigning threads for each MPI rank
+export CPU_BIND_SCHEME="--cpu-bind=list:1-8:9-16:17-24:25-32:33-40:41-48:53-60:61-68:69-76:77-84:85-92:93-100"
+
+# Get unique node list
+awk '!seen[$0]++' "${PBS_NODEFILE}" > nodes.all
+
+#Split into 43 node per case
+split -d -l 43 nodes.all case_
+
+run_case () {
+    case_id=$1
+    hostfile=$2
+    casedir=$3
+
+    (
+        cd "$casedir" || exit 1
+        mpiexec --hostfile "$PBS_O_WORKDIR/$hostfile" -n 512 --ppn 12 ${CPU_BIND_SCHEME} gpu_tile_compact.sh "${EXEC}" "${INPUT}"  \ 
+        > "log/log_$(date +%Y-%m-%d_%H-%M-%S).out" 2>&1
+    ) &
+}
+
+run_case 1 case_00 $SPHRM_DIR
+run_case 2 case_01 $SPH_DIR
+run_case 3 case_02 $WE05_DIR
+run_case 4 case_03 $WE10_DIR
+
+wait
