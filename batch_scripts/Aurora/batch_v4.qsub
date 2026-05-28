@@ -1,18 +1,20 @@
 #!/bin/bash -l
 #PBS -A BubbleLaden
 #PBS -N n1024_Multiple
-#PBS -l select=256
-#PBS -l walltime=12:00:00
+#PBS -l select=129
+#PBS -l walltime=00:40:00
 #PBS -l filesystems=home:flare
-#PBS -q prod
+#PBS -q debug-scaling
 #PBS -m be
 #PBS -j oe
 
-PARENT_DIR="$HOME/member-work/incompressible_tml/temp/run_cpu_binding/temp_2"
-SPHRM_DIR="$PARENT_DIR/SPHRM"
-SPH_DIR="$PARENT_DIR/SPH"
-WE05_DIR="$PARENT_DIR/WE05"
-WE10_DIR="$PARENT_DIR/WE10"
+PARENT_DIR="$HOME/member-work/incompressible_tml/Cases"
+SPH_DIR="$PARENT_DIR/SinglePhase"
+WE05_DIR="$PARENT_DIR/We05Re200"
+WE10_DIR="$PARENT_DIR/We10Re200"
+
+#NOT BEING RUN!!
+SPHRM_DIR="$PARENT_DIR/SinglePhaseRM"
 
 EXEC="${HOME}/executables/bin/exaflow3D"
 INPUT="incompressible_tml.ctr"
@@ -26,6 +28,7 @@ export OMP_PLACES=threads
 export CPU_BIND_SCHEME="--cpu-bind=list:1-8:9-16:17-24:25-32:33-40:41-48:53-60:61-68:69-76:77-84:85-92:93-100"
 
 # Get unique node list
+cd $PARENT_DIR
 awk '!seen[$0]++' "${PBS_NODEFILE}" > nodes.all
 
 #Split into 43 node per case
@@ -43,9 +46,8 @@ run_case () {
     ) &
 }
 
-run_case 1 case_00 $SPHRM_DIR
+run_case 1 case_00 $SPH_DIR
 run_case 2 case_01 $SPH_DIR
 run_case 3 case_02 $WE05_DIR
-run_case 4 case_03 $WE10_DIR
 
 wait
