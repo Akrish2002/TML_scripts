@@ -41,8 +41,7 @@ run_case () {
 
     (
         cd "$casedir" || exit 1
-        mpiexec --hostfile "$PBS_O_WORKDIR/$hostfile" -n 512 --ppn 12 ${CPU_BIND_SCHEME} gpu_tile_compact.sh "${EXEC}" "${INPUT}"  \ 
-        > "log/log_$(date +%Y-%m-%d_%H-%M-%S).out" 2>&1
+        mpiexec --hostfile "$PBS_O_WORKDIR/$hostfile" -n 512 --ppn 12 ${CPU_BIND_SCHEME} gpu_tile_compact.sh "${EXEC}" "${INPUT}" > "log/log_$(date +%Y-%m-%d_%H-%M-%S).out" 2>&1
     ) &
 }
 
