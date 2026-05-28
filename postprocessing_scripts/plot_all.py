@@ -1,11 +1,12 @@
 import argparse
 
-from mean_flow_profile import plot_mean_flow_profile
-from TKE import plot_TKE
-from reynolds_stresses import plot_reynolds_stresses
-from total_dissipation_of_TKE import plot_total_dissipation_of_TKE
-from spectra import plot_spectra
-from reynolds_number import plot_reynolds_number
+from pyscripts.mean_flow_profile import plot_mean_flow_profile
+from pyscripts.TKE import plot_TKE
+from pyscripts.dissipation import plot_dissipation
+from pyscripts.reynolds_stresses import plot_reynolds_stresses
+from pyscripts.total_dissipation_of_TKE import plot_total_dissipation_of_TKE
+from pyscripts.spectra import plot_spectra
+from pyscripts.reynolds_number import plot_reynolds_number
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -21,10 +22,17 @@ if __name__ == "__main__":
                             "reynolds_number",
                         ])
     parser.add_argument("--inputs", nargs="+", required=True)
+    parser.add_argument(
+        "--component",
+        type=int,
+        default=1,
+        choices=[1, 2, 3, 4],
+        help="Reynolds stress component to plot: 1=uu, 2=vv, 3=ww, 4=uv"
+    )
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--labels", nargs="+", default=None)
     parser.add_argument("--figsize", nargs=2, type=float, default=[6.0, 4.0])
-    parser.add_argument("--zoom", action="store_true")
+    parser.add_argument("--zoom", type=float)
     parser.add_argument("--zoom-window", type=float, default=1.0)
 
     args = parser.parse_args()

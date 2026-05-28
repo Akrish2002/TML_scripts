@@ -4,7 +4,7 @@ from pathlib import Path
 import re, pathlib
 import os
                                                                                 
-from pyscripts.test_TKE_vGPT_v2_with_spectra import TKE_Budget                                         
+from pyscripts.test_TKE_vGPT_v3 import TKE_Budget                                         
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     """ To grep all the required data from the CTR file

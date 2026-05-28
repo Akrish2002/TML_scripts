@@ -6,8 +6,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import os
 
-#from pyscripts.test_TKE_vGPT_v3 import TKE_Budget
-from pyscripts.test_TKE_vGPT_v2_with_spectra import TKE_Budget
+from pyscripts.test_TKE_vGPT_v3 import TKE_Budget
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     """ To grep all the required data from the CTR file
@@ -171,10 +170,13 @@ def plot_reynolds_stresses(args):
 
         #Zoom mask in this
         x = xi
-        y1 = uprime_uprime
-        y2 = vprime_vprime
-        y3 = wprime_wprime
-        y4 = uprime_vprime
+        y_list = [
+            uprime_uprime,
+            vprime_vprime,
+            wprime_wprime,
+            uprime_vprime,
+        ]
+        y = y_list[args.component - 1]
         if args.zoom:
             x1 = 0 - args.zoom_window
             x2 = 0 + args.zoom_window

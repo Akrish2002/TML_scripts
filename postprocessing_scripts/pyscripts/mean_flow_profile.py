@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from mpi4py import MPI
 from pathlib import Path
 import re, pathlib
@@ -118,7 +119,7 @@ def load_npz_mean_flow_profile(path: str):
     t_normalized    = float(d["t_normalized"])
     ny              = int(d["ny"])
 
-    xi               = d["xi"].astype(np.float64)
+    xi               = d["y"].astype(np.float64)
     u_avg_normalized = d["u_avg_normalized"].astype(np.float64)
 
     print("xi shape: ", xi.shape)

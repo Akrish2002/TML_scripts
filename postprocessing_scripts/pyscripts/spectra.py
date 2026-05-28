@@ -5,8 +5,7 @@ from pathlib import Path
 import matplotlib as mpl                                                        
 import matplotlib.pyplot as plt
 
-#from pyscripts.test_TKE_vGPT_v3 import TKE_Budget
-from pyscripts.test_TKE_vGPT_v2_with_spectra import TKE_Budget
+from pyscripts.test_TKE_vGPT_v3 import TKE_Budget
 
 def grep_timestep(path = "."):                                                  
     """ Grepping time steps to calculate first step, step and last step         
@@ -32,7 +31,7 @@ def grep_timestep(path = "."):
 #Computing
 def compute_spectra(args):
     T = TKE_Budget(args.case)
-    T._time_step      = args.ts
+    T._time_step      = args.time_step
     T._stackdirection = args.stackdirection
     
     T.common_terms()
@@ -56,16 +55,16 @@ def compute_spectra(args):
         if E_kx.shape[0] != ny:
             raise ValueError(f"E_kx shape mismatch: got {E_kx.shape}, expected ({ny},)")
     
-        out_path = Path(args.out)
+        out_path = Path(args.output_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
     
         #out_path = out_dir / f"{nx}_{int(args.ts)}.npz"
-        out_path = f"{ny}_{int(args.ts)}.npz"
+        out_path = f"{ny}_{int(args.time_step)}.npz"
 
         np.savez(
                     out_path,
                     case=str(Path(args.case).resolve()),
-                    time_step=int(args.ts),
+                    time_step=int(args.time_step),
                     ny=int(ny),
                     #Value stored, custom for each script
                     y=y.astype(np.float64),
@@ -73,7 +72,7 @@ def compute_spectra(args):
                     kx=kx.astype(np.float64)
                     
                 )
-        print(f"[rank0] wrote {out_path} (ny={ny}, ts={args.ts})")
+        print(f"[rank0] wrote {out_path} (ny={ny}, ts={args.time_step})")
 
 #Plotting
 def apply_paper_style(ax):
