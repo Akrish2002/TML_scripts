@@ -171,12 +171,17 @@ def plot_reynolds_stresses(args):
         #Zoom mask in this
         x = xi
         y_list = [
-            uprime_uprime,
-            vprime_vprime,
-            wprime_wprime,
-            uprime_vprime,
+            [uprime_uprime,
+             vprime_vprime,
+             wprime_wprime,
+             uprime_vprime],
+            [r"$\overline{u'u'}$",
+             r"$\overline{v'v'}$",
+             r"$\overline{w'w'}$",
+             r"$\overline{u'v'}$"]
         ]
-        y = y_list[args.component - 1]
+        y = y_list[0][args.component - 1]
+
         if args.zoom:
             x1 = 0 - args.zoom_window
             x2 = 0 + args.zoom_window
@@ -190,7 +195,7 @@ def plot_reynolds_stresses(args):
 
 
     #Labels
-    ax.set_ylabel(r"$\overline{u'u'}$")
+    ax.set_ylabel(y_list[1][args.component - 1])
     ax.set_xlabel(r"$\xi$")
     #To have path of run being used
     p = Path(case)
@@ -207,6 +212,7 @@ def plot_reynolds_stresses(args):
 
     apply_paper_style(ax)
     ax.legend(loc="best", frameon=False)
+    ax.legend(fontsize=6)
     fig.tight_layout(pad=1.0)
     fig.savefig(args.out, dpi=300)
     plt.close(fig)

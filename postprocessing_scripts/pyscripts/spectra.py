@@ -175,8 +175,8 @@ def plot_spectra(args):
 
 
     #Labels
-    ax.set_ylabel("$\E_uu$")
-    ax.set_xlabel("$\kx$")
+    ax.set_ylabel("$E_{uu}$")
+    ax.set_xlabel("$kx$")
     #To have path of run being used
     p = Path(case)
     short = Path(*p.parts[-2:])
@@ -184,7 +184,7 @@ def plot_spectra(args):
         0.98, 0.01, short,
         ha="right",
         va="bottom",
-        fontsize=9
+        fontsize=5
     )
 
     if args.zoom:
@@ -192,6 +192,7 @@ def plot_spectra(args):
 
     apply_paper_style(ax)
     ax.legend(loc="best", frameon=False)
+    ax.legend(fontsize=6)
     fig.tight_layout(pad=1.0)
     fig.savefig(args.out, dpi=300)
     plt.close(fig)

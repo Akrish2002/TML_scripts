@@ -1016,30 +1016,30 @@ def main():
     #TKE = TKE_Budget("/ccs/home/abhi/member-work/incompressible-tml/BaseCase/n512")
     #TKE = TKE_Budget("../")
 
-    TKE = TKE_Budget("../BaseCase/n256/run4")
-    TKE._time_step = 7500
-    TKE._stackdirection = 1
+    #TKE = TKE_Budget("../BaseCase/n256/run4")
+    #TKE._time_step = 7500
+    #TKE._stackdirection = 1
 
     #TKE = TKE_Budget("../")
     #TKE._time_step = 12000
     #TKE._stackdirection = 1
 
-    #TKE = TKE_Budget("../BaseCase/n1024/run6")
-    #TKE._time_step = 100000
-    #TKE._stackdirection = 1
+    TKE = TKE_Budget("../Cases/BaseCase/n1024/run_k4_5%_v2")
+    TKE._time_step = 85000
+    TKE._stackdirection = 1
 
     #TKE = TKE_Budget("../BaseCase/n1024/run10")
     #TKE._time_step = 102070
     #TKE._stackdirection = 1
 
     TKE.common_terms()
-    #TKE.advection()
-    #TKE.pressure_diffusion()
-    #TKE.turbulent_diffusion()
-    #TKE.viscous_diffusion()
-    #TKE.dissipation()
-    #TKE.surface_tension()
-    #TKE.production()
+    TKE.advection()
+    TKE.pressure_diffusion()
+    TKE.turbulent_diffusion()
+    TKE.viscous_diffusion()
+    TKE.dissipation()
+    TKE.surface_tension()
+    TKE.production()
     #TKE.compute_spectra()
     #TKE.sum_all_terms()
 
@@ -1057,12 +1057,12 @@ def main():
     #    pi_window=2.5,
     #)
 
-    #TKE.plot(
-    #    fname="TKE_Budget_n1024_ts100000.png",
-    #    title="M3(1024³)",
-    #    zoom_pi=True,
-    #    pi_window=2.5,
-    #)
+    TKE.plot(
+        fname="TKE_Budget_ts85000_n1024.png",
+        title="M3(1024³)",
+        zoom_pi=True,
+        pi_window=2.5,
+    )
 
 
     #case = "../../../../n256/run4/"
