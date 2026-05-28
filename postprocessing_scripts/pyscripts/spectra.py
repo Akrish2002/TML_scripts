@@ -80,7 +80,6 @@ def compute_spectra(args):
     
         out_path = Path(args.output_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-    
         out_path = out_dir / f"{int(args.time_step)}_{ny}.npz"
 
         np.savez(
