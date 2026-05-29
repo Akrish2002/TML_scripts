@@ -2,6 +2,8 @@ import numpy as np
 from mpi4py import MPI                                                          
 from pathlib import Path                                                        
 import re, pathlib
+import csv
+import matplotlib.pyplot as plt
 import os
                                                                                 
 from pyscripts.test_TKE_vGPT_v3 import TKE_Budget                                         
@@ -49,7 +51,6 @@ def grep_timestep(path = "."):
 def compute_total_dissipation_of_TKE(args):                                             
                                                                                 
     (start_ts, step_ts, end_ts) = grep_timestep(args.case)                      
-    total_dissipation = []                                                      
 
     ctr_file        = os.path.join(args.case, "incompressible_tml.ctr")
     dt              = grep_ctr('dt', ctr_file)
@@ -57,11 +58,11 @@ def compute_total_dissipation_of_TKE(args):
     U_g             = 3.1830988618379066
     delta_ts        = (2. * np.pi) / 100.
 
-    time_steps = [i for i in range(start_ts, end_ts+step_ts, step_ts)]                  
+    time_steps      = [i for i in range(start_ts, end_ts+step_ts, step_ts)]                  
     t_normalized    = [(time_step * dt * U_g) / delta_ts for time_step in time_steps]
 
     #Debug
-    #T = TKE_Budget(args.case)                             
+    T = TKE_Budget(args.case)                             
     #if(T._case.rank == 0):
     #    print(start_ts)
     #    print(step_ts)
@@ -70,7 +71,6 @@ def compute_total_dissipation_of_TKE(args):
     #This is for computing dy for performing integration 
     ny                       = T._ny_g                                      
     dy                       = 2 * np.pi / ny                               
-    #del(T)
 
     if T.comm.Get_rank() == 0:
         fname = f"total_dissipation_rate_{ny}.csv"
@@ -82,7 +82,9 @@ def compute_total_dissipation_of_TKE(args):
     else:
         f = w = None
 
+    del(T)
     total_dissipation_of_TKE = []
+
     for time_step in time_steps:                                                
         T                   = TKE_Budget(args.case)                             
         T._time_step        = time_step                                           
@@ -92,25 +94,36 @@ def compute_total_dissipation_of_TKE(args):
         T.dissipation()                                                         
                                                                                 
         if T._case.rank == 0:                                                   
+            #integrand_dissipation_of_TKE = T._dissipation_global                
+            #total_dissipation_of_TKE.append(np.trapezoid(integrand_dissipation_of_TKE, dx=dy))
+
             integrand_dissipation_of_TKE = T._dissipation_global                
-            total_dissipation_of_TKE.append(np.trapezoid(integrand_dissipation_of_TKE, dx=dy))
+            total_dissipation_of_TKE     = (np.trapezoid(integrand_dissipation_of_TKE, dx=dy))
+            w.writerow([t_normalized[i], total_dissipation_of_TKE])
+            f.flush()
+            os.fsync(f.fileno())
 
-    time_steps = np.asarray(time_steps)
-    total_dissipation_of_TKE = np.asarray(total_dissipation_of_TKE)
+    #time_steps = np.asarray(time_steps)
+    #total_dissipation_of_TKE = np.asarray(total_dissipation_of_TKE)
 
-    if T._case.rank == 0:                                                       
-        if total_dissipation_of_TKE.ndim != 1:
-            raise ValueError(f"total_dissipation_of_TKE has more dimensions than one!, that is incorrect!")
+    #if T._case.rank == 0:                                                       
+    #    if total_dissipation_of_TKE.ndim != 1:
+    #        raise ValueError(f"total_dissipation_of_TKE has more dimensions than one!, that is incorrect!")
 
-        if total_dissipation_of_TKE.shape != time_steps.shape: 
-            raise ValueError("Mismatch between number of total dissipations computed and time_steps to be plotted against")
+    #    if total_dissipation_of_TKE.shape != time_steps.shape: 
+    #        raise ValueError("Mismatch between number of total dissipations computed and time_steps to be plotted against")
 
-        out_path = Path(args.output_path)                                               
-        out_path.parent.mkdir(parents=True, exist_ok=True)                      
-                                                                                
-        w.writerow([t_normalized, total_dissipation_of_TKE])
-        f.flush()               # push to OS buffers
-        os.fsync(f.fileno()) 
+    #    out_path = Path(args.output_path)                                               
+    #    out_path.parent.mkdir(parents=True, exist_ok=True)                      
+
+    #    for tnorm, eps_int in zip(t_normalized, total_dissipation_of_TKE):
+    #        w.writerow([tnorm, eps_int])
+
+    #    f.flush()
+    #    os.fsync(f.fileno())
+    #    f.close()
+
+        #print(f"[rank0] wrote {fname} (ny={ny})")                                                                                
 
         #np.savez(                                                               
         #            out_path,                                                   
@@ -125,7 +138,6 @@ def compute_total_dissipation_of_TKE(args):
         #        )                                                               
         #print(f"[rank0] wrote {out_path} (ny={ny})")                            
 
-    print(f"[rank0] wrote {out_path} (ny={ny})")                            
     del(T)
 #------------------------------------------------------------------------------
 
