@@ -51,6 +51,7 @@ def grep_timestep(path = "."):
 def compute_total_dissipation_of_TKE(args):                                             
                                                                                 
     (start_ts, step_ts, end_ts) = grep_timestep(args.case)                      
+    start_ts = 76000
 
     ctr_file        = os.path.join(args.case, "incompressible_tml.ctr")
     dt              = grep_ctr('dt', ctr_file)
@@ -72,20 +73,20 @@ def compute_total_dissipation_of_TKE(args):
     ny                       = T._ny_g                                      
     dy                       = 2 * np.pi / ny                               
 
-    if T.comm.Get_rank() == 0:
+    if T._case.rank == 0:
         fname = f"total_dissipation_rate_{ny}.csv"
         write_header = not os.path.exists(fname) or os.path.getsize(fname) == 0
         f = open(fname, "a", newline="")
         w = csv.writer(f)
         if write_header:
-            w.writerow(["TimeStep", "TotalDissipation"])
+            w.writerow(["NormalizedTime", "TotalDissipation"])
     else:
         f = w = None
 
     del(T)
     total_dissipation_of_TKE = []
 
-    for time_step in time_steps:                                                
+    for i, time_step in enumerate(time_steps):                                                
         T                   = TKE_Budget(args.case)                             
         T._time_step        = time_step                                           
         T._stackdirection   = args.std                                          
@@ -99,7 +100,7 @@ def compute_total_dissipation_of_TKE(args):
 
             integrand_dissipation_of_TKE = T._dissipation_global                
             total_dissipation_of_TKE     = (np.trapezoid(integrand_dissipation_of_TKE, dx=dy))
-            w.writerow([t_normalized[i], total_dissipation_of_TKE])
+            w.writerow([time_step, t_normalized[i], total_dissipation_of_TKE])
             f.flush()
             os.fsync(f.fileno())
 
