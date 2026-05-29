@@ -61,16 +61,26 @@ def compute_total_dissipation_of_TKE(args):
     t_normalized    = [(time_step * dt * U_g) / delta_ts for time_step in time_steps]
 
     #Debug
-    T = TKE_Budget(args.case)                             
-    if(T._case.rank == 0):
-        print(start_ts)
-        print(step_ts)
-        print(end_ts)
+    #T = TKE_Budget(args.case)                             
+    #if(T._case.rank == 0):
+    #    print(start_ts)
+    #    print(step_ts)
+    #    print(end_ts)
 
     #This is for computing dy for performing integration 
     ny                       = T._ny_g                                      
     dy                       = 2 * np.pi / ny                               
-    del(T)
+    #del(T)
+
+    if T.comm.Get_rank() == 0:
+        fname = f"total_dissipation_rate_{ny}.csv"
+        write_header = not os.path.exists(fname) or os.path.getsize(fname) == 0
+        f = open(fname, "a", newline="")
+        w = csv.writer(f)
+        if write_header:
+            w.writerow(["TimeStep", "TotalDissipation"])
+    else:
+        f = w = None
 
     total_dissipation_of_TKE = []
     for time_step in time_steps:                                                
@@ -85,9 +95,9 @@ def compute_total_dissipation_of_TKE(args):
             integrand_dissipation_of_TKE = T._dissipation_global                
             total_dissipation_of_TKE.append(np.trapezoid(integrand_dissipation_of_TKE, dx=dy))
 
-                                                                                
     time_steps = np.asarray(time_steps)
     total_dissipation_of_TKE = np.asarray(total_dissipation_of_TKE)
+
     if T._case.rank == 0:                                                       
         if total_dissipation_of_TKE.ndim != 1:
             raise ValueError(f"total_dissipation_of_TKE has more dimensions than one!, that is incorrect!")
@@ -98,19 +108,24 @@ def compute_total_dissipation_of_TKE(args):
         out_path = Path(args.output_path)                                               
         out_path.parent.mkdir(parents=True, exist_ok=True)                      
                                                                                 
-        np.savez(                                                               
-                    out_path,                                                   
-                    case            =   str(Path(args.case).resolve()),                        
+        w.writerow([t_normalized, total_dissipation_of_TKE])
+        f.flush()               # push to OS buffers
+        os.fsync(f.fileno()) 
 
-                    ny              =   int(ny),
-                    time_steps      =   time_steps.astype(np.float64),                                    
-                    t_normalized    =   t_normalized.astype(np.float64), 
+        #np.savez(                                                               
+        #            out_path,                                                   
+        #            case            =   str(Path(args.case).resolve()),                        
 
-                    #Custom
-                    total_dissipation_of_TKE    =   total_dissipation_of_TKE.astype(np.float64)
-                )                                                               
-        print(f"[rank0] wrote {out_path} (ny={ny})")                            
+        #            ny              =   int(ny),
+        #            time_steps      =   time_steps.astype(np.float64),                                    
+        #            t_normalized    =   t_normalized.astype(np.float64), 
 
+        #            #Custom
+        #            total_dissipation_of_TKE    =   total_dissipation_of_TKE.astype(np.float64)
+        #        )                                                               
+        #print(f"[rank0] wrote {out_path} (ny={ny})")                            
+
+    print(f"[rank0] wrote {out_path} (ny={ny})")                            
     del(T)
 #------------------------------------------------------------------------------
 
