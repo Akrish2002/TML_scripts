@@ -4,7 +4,8 @@ from pyscripts.mean_flow_profile import plot_mean_flow_profile
 from pyscripts.TKE import plot_TKE
 from pyscripts.dissipation import plot_dissipation
 from pyscripts.reynolds_stresses import plot_reynolds_stresses
-from pyscripts.total_dissipation_of_TKE import plot_total_dissipation_of_TKE
+#from pyscripts.total_dissipation_of_TKE import plot_total_dissipation_of_TKE
+from pyscripts.total_dissipation_of_TKE_v2 import plot_total_dissipation_of_TKE
 from pyscripts.spectra import plot_spectra
 from pyscripts.reynolds_number import plot_reynolds_number
 
