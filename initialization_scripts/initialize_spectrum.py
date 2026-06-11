@@ -234,16 +234,106 @@ if __name__ == '__main__':
     print("--V min & max val: ", v.min(), v.max())
     print("--W min & max val: ", w.min(), w.max())
 
-    idx = int(case.grid['nx']/2.)
+    #idx = int(case.grid['nx']/2.)
+    #fig, ax1 = plt.subplots(figsize=(3,3))
+    #ax1.plot(phi1[idx,:,2], case.grid['ycs'][idx,:,2], 'k')
+    #ax1.set(
+    #    xlabel = r'$\phi_1$ [-]',
+    #    ylabel = r'$y$ [m]',
+    #)
+    #ax2 = ax1.twiny()
+    #ax2.plot(umean[idx,:,2], case.grid['ycs'][idx,:,2], 'r--')
+    #ax2.plot(u[idx,:,2], case.grid['ycs'][idx,:,2], 'g--')
+    #ax2.set(
+    #    xlabel = r'$u$ [m/s]',
+    #)
+    #fig.tight_layout()
+    #fig.savefig(f'./profiles_u.png', dpi=300)
+    #plt.close(fig)
+
+    #idx = int(case.grid['nx']/2.)
+    #fig, ax1 = plt.subplots(figsize=(3,3))
+    #ax1.plot(phi1[idx,:,2], case.grid['ycs'][idx,:,2], 'k')
+    #ax1.set(
+    #    xlabel = r'$\phi_1$ [-]',
+    #    ylabel = r'$y$ [m]',
+    #)
+    #ax2 = ax1.twiny()
+    #ax2.plot(vmean[idx,:,2], case.grid['ycs'][idx,:,2], 'r--')
+    #ax2.plot(v[idx,:,2], case.grid['ycs'][idx,:,2], 'g--')
+    #ax2.set(
+    #    xlabel = r'$v$ [m/s]',
+    #)
+    #fig.tight_layout()
+    #fig.savefig(f'./profiles_v.png', dpi=300)
+    #plt.close(fig)
+
+    #fig, ax = plt.subplots(figsize=(4,3))
+    #cs = ax.pcolormesh(case.grid['xcs'][:,:,2], case.grid['ycs'][:,:,2], u[:,:,2], cmap='inferno')
+    #cb = fig.colorbar(cs, ax=ax)
+    #cb.set_label(r'$u_1$ [m/s]')
+    #ax.set(
+    #    xlabel = r'$x$ [m/s]',
+    #    ylabel = r'$y$ [m/s]',
+    #)
+    #fig.tight_layout()
+    #fig.savefig(f'./noise.png', dpi=300)
+    #plt.close(fig)
+
+    iidx = int(case.grid['nx']/2.)
+    kidx = int(case.grid['nz']/2.)
+    umean_prof  = umean[iidx, :, kidx]
+    u_prof      = u[iidx,   :, kidx]
+    mu_prof     = mu[iidx,  :, kidx]
+    rho_prof    = rho[iidx, :, kidx]
+
+    fig, ax1 = plt.subplots(1, 2, figsize=(6,3))
+    ax2 = [None, None]
+
+    #1.
+    ax1[0].plot(u_prof, case.grid['ycs'][iidx, :, kidx], 'g--')
+    ax1[0].plot(umean_prof, case.grid['ycs'][iidx, :, kidx], 'b--')
+    ax1[0].tick_params(axis='both', labelsize=6)
+    ax1[0].set_xlabel(r'$u$ [m/s]', fontsize=6)
+    ax1[0].set_ylabel(r'$y$ [m]', fontsize=6)
+
+    #2.
+    ax2[0] = ax1[0].twiny()
+    ax2[0].plot(phi1[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'k')
+    ax2[0].tick_params(axis='both', labelsize=6)
+    ax2[0].set_xlabel(r'$\phi_1$ [-]', fontsize=6)
+    
+    #3.
+    ax1[1].plot(mu_prof , case.grid['ycs'][iidx, :, kidx], 'r--')
+    #ax1[1].ticklabel_format(axis='x', style='sci', scilimits=(-3, -3))
+    ax1[1].axvline(mu2, color='k', linestyle='--', alpha=0.3)
+    ax1[1].axvline(mu1, color='k', linestyle='--', alpha=0.3)
+    ax1[1].tick_params(axis='both', labelsize=6)
+    #ax1[1].xaxis.get_offset_text().set_fontsize(8)
+    ax1[1].set_xlabel(r'$\mu$ [Pa-s]',fontsize=6)
+    #ax1[1].set_ylabel(r'$y$ [m]', fontsize=6)
+
+    #4.
+    ax2[1] = ax1[1].twiny()
+    ax2[1].plot(rho_prof, case.grid['ycs'][iidx, :, kidx], 'g--')
+    ax2[1].tick_params(axis='both', labelsize=6)
+    #formatter = mticker.ScalarFormatter(useMathText=True)
+    #formatter.set_powerlimits((-3, -3))
+    ax2[1].set_xlabel(r'$\rho$ [kg/m^3]',fontsize=6)
+
+    fig.tight_layout()
+    fig.savefig('./profiles_of_U_mu_rho.png', dpi=300)
+    plt.close(fig)
+
     fig, ax1 = plt.subplots(figsize=(3,3))
-    ax1.plot(phi1[idx,:,2], case.grid['ycs'][idx,:,2], 'k')
+    ax1.plot(phi1[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'k')
     ax1.set(
         xlabel = r'$\phi_1$ [-]',
         ylabel = r'$y$ [m]',
     )
     ax2 = ax1.twiny()
-    ax2.plot(umean[idx,:,2], case.grid['ycs'][idx,:,2], 'r--')
-    ax2.plot(u[idx,:,2], case.grid['ycs'][idx,:,2], 'g--')
+    ax2.plot(u[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'g--')
+    ax2.plot(umean[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'r--')
     ax2.set(
         xlabel = r'$u$ [m/s]',
     )
@@ -251,16 +341,15 @@ if __name__ == '__main__':
     fig.savefig(f'./profiles_u.png', dpi=300)
     plt.close(fig)
 
-    idx = int(case.grid['nx']/2.)
     fig, ax1 = plt.subplots(figsize=(3,3))
-    ax1.plot(phi1[idx,:,2], case.grid['ycs'][idx,:,2], 'k')
+    ax1.plot(phi1[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'k')
     ax1.set(
         xlabel = r'$\phi_1$ [-]',
         ylabel = r'$y$ [m]',
     )
     ax2 = ax1.twiny()
-    ax2.plot(vmean[idx,:,2], case.grid['ycs'][idx,:,2], 'r--')
-    ax2.plot(v[idx,:,2], case.grid['ycs'][idx,:,2], 'g--')
+    ax2.plot(vmean[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'r--')
+    ax2.plot(v[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'g--')
     ax2.set(
         xlabel = r'$v$ [m/s]',
     )
@@ -269,7 +358,7 @@ if __name__ == '__main__':
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(4,3))
-    cs = ax.pcolormesh(case.grid['xcs'][:,:,2], case.grid['ycs'][:,:,2], u[:,:,2], cmap='inferno')
+    cs = ax.pcolormesh(case.grid['xcs'][:,:,kidx], case.grid['ycs'][:,:,kidx], u[:,:,kidx], cmap='inferno')
     cb = fig.colorbar(cs, ax=ax)
     cb.set_label(r'$u_1$ [m/s]')
     ax.set(
