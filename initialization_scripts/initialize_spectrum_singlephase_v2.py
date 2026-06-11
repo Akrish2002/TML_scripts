@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import initialize_1D_singlephase as initialize_1D
 import argparse
 import math
@@ -19,7 +20,7 @@ def parse_args():
 
     parser.add_argument('--Re',      type=float, required=True)
     parser.add_argument('--delta_U', type=float, required=True)
-
+    parser.add_argument('--m',       type=float, required=True)
 
     return parser.parse_args()
 
@@ -98,37 +99,29 @@ def generate_perturbations(Nz, Ny, Nx, dz, dy, dx, amp, delta, delta_U, seed=0):
 
     return u, v, w
 
-#def params(Re, mu, delta, rho):
-#
-#    #Re = (U1 * rho * delta)/mu
-#    u1 = (Re * mu)/(delta * rho)
-#
-#    #We = (rho * u1 * u1 * delta)/sigma
-#    #sigma = (rho * u1 * u1 * delta)/We 
-#
-#    #print("--U1=",u1, "--Sigma=", sigma)
-#    print("--U1=",u1)
-#    return u1
-
-def params(rho, delta_U, delta, Re):
-
-    '''
-    m      --> Ratio of mu2 / mu1
-    rho    --> Density of fluid1
-    delta  --> Initial momentum thickness
-    Re     --> Reynolds number of fluid1
-    We     --> Weber number as defined for fluid1
-    '''
-
-    #1.For Re
-    #1.1 Compute mu_g
-    mu = (rho * delta_U * delta) / Re
-    
-    print("--User entered delta_U: ", delta_U)
-    print("--Computed mu1 & mu2: ", mu)
-    mu1 = mu
-    mu2 = mu
-
+def params(rho, delta_U, delta, Re, m):                                      
+                                                                                
+    '''                                                                         
+    m      --> Ratio of mu2 / mu1                                               
+    rho    --> Density of fluid1                                                
+    delta  --> Initial momentum thickness                                       
+    Re     --> Reynolds number of fluid1                                        
+    '''                                                                         
+                                                                                
+    Re1     = Re                                                                
+    rho1    = rho                                                               
+                                                                                
+    #1.For Re                                                                   
+    #1.1 Compute mu_g                                                           
+    mu1 = (rho1 * delta_U * delta) / Re1                                        
+                                                                                
+    #1.2 Compute mu_l                                                           
+    mu2 = m * mu1                                                               
+                                                                                
+    print("--User entered delta_U: ", delta_U)                                            
+    print("--Therefore U1 and U2: ", 0.5 * delta_U)                                            
+    print("--Computed mu1, mu2: ", mu1, mu2)                                    
+                                                                                
     return mu1, mu2
 
 if __name__ == '__main__':
@@ -173,11 +166,12 @@ if __name__ == '__main__':
 
     Re      = args.Re
     delta_U = args.delta_U
+    m       = args.m
     sigma   = 0
 
-    mu1, mu2 = params(rho1, delta_U, delta, Re)
-    U1 = 1. * delta_U
-    U2 = 0. * delta_U
+    mu1, mu2 = params(rho1, delta_U, delta, Re, m)
+    U1 =  0.5 * delta_U
+    U2 = -0.5 * delta_U
 
     #Create custom initial conditions
     time_step = 0
@@ -196,7 +190,7 @@ if __name__ == '__main__':
     rho   = profile * rho1 + (1. - profile) * rho2
     mu    = profile * mu1  + (1. - profile) * mu2
 
-    c = initialize_1D.get_optimal_c(case.grid['ycs'], (2 * np.pi/ny_g), yloc, U1, delta_U, delta)
+    c = initialize_1D.get_optimal_c(case.grid['ycs'], (2 * np.pi/ny_g), yloc, U1, U2, delta_U, delta)
     print("--Computed c val: ", c)
 
     ones  = np.ones_like(case.grid['ycs'])
@@ -217,7 +211,7 @@ if __name__ == '__main__':
 
     u1_t = np.mean(u, axis=(0,2))
     alpha = np.mean(phi2, axis=(0,2))
-    print("--Normalized momentum thickness after adding pertubation: ", initialize_1D.momentum_thickness(U1, u1_t, ((2 * np.pi) / ny_g), delta_U) / delta)
+    print("--Normalized momentum thickness after adding pertubation: ", initialize_1D.momentum_thickness(U1, U2, u1_t, ((2 * np.pi) / ny_g), delta_U) / delta)
 
     print("--U min & max val: ", u.min(), u.max())
     print("--V min & max val: ", v.min(), v.max())
@@ -226,34 +220,57 @@ if __name__ == '__main__':
     iidx = int(case.grid['nx']/2.)
     kidx = int(case.grid['nz']/2.)
     umean_prof  = umean[iidx, :, kidx]
-    unoise_prof = unoise[iidx, :, kidx]
-    mu_prof     = mu[iidx, :, kidx]
+    u_prof      = u[iidx,   :, kidx]
+    mu_prof     = mu[iidx,  :, kidx]
     rho_prof    = rho[iidx, :, kidx]
 
-    ax.axhline(np.pi, color='k', ls='--', lw=1)
-    ax.set(
-        xlabel='Profile + offset',
-        ylabel=r'$y$',
-        xlim=(-0.2, 4.0),
-        ylim=(0, 2*np.pi)
-    )
-    ax.set_xticks([0.5, 1.9, 3.3])
-    ax.set_xticklabels([r'$U$', r'$\mu$', r'$\rho$'])
+    fig, ax1 = plt.subplots(1, 2, figsize=(6,3))
+    ax2 = [None, None]
+
+    #1.
+    ax1[0].plot(u_prof, case.grid['ycs'][iidx, :, kidx], 'g--')
+    ax1[0].plot(umean_prof, case.grid['ycs'][iidx, :, kidx], 'b--')
+    ax1[0].tick_params(axis='both', labelsize=6)
+    ax1[0].set_xlabel(r'$u$ [m/s]', fontsize=6)
+    ax1[0].set_ylabel(r'$y$ [m]', fontsize=6)
+
+    #2.
+    ax2[0] = ax1[0].twiny()
+    ax2[0].plot(phi1[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'k')
+    ax2[0].tick_params(axis='both', labelsize=6)
+    ax2[0].set_xlabel(r'$\phi_1$ [-]', fontsize=6)
     
+    #3.
+    ax1[1].plot(mu_prof , case.grid['ycs'][iidx, :, kidx], 'r--')
+    #ax1[1].ticklabel_format(axis='x', style='sci', scilimits=(-3, -3))
+    ax1[1].axvline(mu2, color='k', linestyle='--', alpha=0.3)
+    ax1[1].axvline(mu1, color='k', linestyle='--', alpha=0.3)
+    ax1[1].tick_params(axis='both', labelsize=6)
+    #ax1[1].xaxis.get_offset_text().set_fontsize(8)
+    ax1[1].set_xlabel(r'$\mu$ [Pa-s]',fontsize=6)
+    #ax1[1].set_ylabel(r'$y$ [m]', fontsize=6)
+
+    #4.
+    ax2[1] = ax1[1].twiny()
+    ax2[1].plot(rho_prof, case.grid['ycs'][iidx, :, kidx], 'g--')
+    ax2[1].tick_params(axis='both', labelsize=6)
+    #formatter = mticker.ScalarFormatter(useMathText=True)
+    #formatter.set_powerlimits((-3, -3))
+    ax2[1].set_xlabel(r'$\rho$ [kg/m^3]',fontsize=6)
+
     fig.tight_layout()
-    fig.savefig('./profiles_U_mu_rho.png', dpi=300)
+    fig.savefig('./profiles_of_U_mu_rho.png', dpi=300)
     plt.close(fig)
 
-
     fig, ax1 = plt.subplots(figsize=(3,3))
-    ax1.plot(phi1[idx,:,kidx], case.grid['ycs'][idx,:,kidx], 'k')
+    ax1.plot(phi1[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'k')
     ax1.set(
         xlabel = r'$\phi_1$ [-]',
         ylabel = r'$y$ [m]',
     )
     ax2 = ax1.twiny()
-    ax2.plot(umean[idx,:,2], case.grid['ycs'][idx,:,2], 'r--')
-    ax2.plot(u[idx,:,2], case.grid['ycs'][idx,:,2], 'g--')
+    ax2.plot(u[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'g--')
+    ax2.plot(umean[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'r--')
     ax2.set(
         xlabel = r'$u$ [m/s]',
     )
@@ -261,16 +278,15 @@ if __name__ == '__main__':
     fig.savefig(f'./profiles_u.png', dpi=300)
     plt.close(fig)
 
-    idx = int(case.grid['nx']/2.)
     fig, ax1 = plt.subplots(figsize=(3,3))
-    ax1.plot(phi1[idx,:,2], case.grid['ycs'][idx,:,2], 'k')
+    ax1.plot(phi1[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'k')
     ax1.set(
         xlabel = r'$\phi_1$ [-]',
         ylabel = r'$y$ [m]',
     )
     ax2 = ax1.twiny()
-    ax2.plot(vmean[idx,:,2], case.grid['ycs'][idx,:,2], 'r--')
-    ax2.plot(v[idx,:,2], case.grid['ycs'][idx,:,2], 'g--')
+    ax2.plot(vmean[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'r--')
+    ax2.plot(v[iidx,:,kidx], case.grid['ycs'][iidx,:,kidx], 'g--')
     ax2.set(
         xlabel = r'$v$ [m/s]',
     )
@@ -279,7 +295,7 @@ if __name__ == '__main__':
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(4,3))
-    cs = ax.pcolormesh(case.grid['xcs'][:,:,2], case.grid['ycs'][:,:,2], u[:,:,2], cmap='inferno')
+    cs = ax.pcolormesh(case.grid['xcs'][:,:,kidx], case.grid['ycs'][:,:,kidx], u[:,:,kidx], cmap='inferno')
     cb = fig.colorbar(cs, ax=ax)
     cb.set_label(r'$u_1$ [m/s]')
     ax.set(
