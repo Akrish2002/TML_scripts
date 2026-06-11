@@ -24,7 +24,7 @@ def u_profile(y, y_ref, delta_u, delta, c):
     u = delta_u * 0.5 * np.tanh((y - y_ref) / (c * delta)) 
     return u  
 
-def momentum_thickness(U1, u, dy, delta_u):
+def momentum_thickness(U1, U2, u, dy, delta_u):
     """
     Compute the momentum thickness via numerical integration.
     
@@ -37,11 +37,12 @@ def momentum_thickness(U1, u, dy, delta_u):
     Returns:
       The computed momentum thickness.
     """
-    integrand = (U1 * U1 - u * u) / (delta_u * delta_u)
+    #integrand = (U1 * U1 - u * u) / (delta_u * delta_u)
+    integrand = (U1 - u) * (u - U2) / (delta_u * delta_u)
     delta_theta = np.trapz(integrand, dx=dy)
     return delta_theta
 
-def get_optimal_c(y, dy, y_ref, U1, delta_u, delta, initial_guess=3.26):
+def get_optimal_c(y, dy, y_ref, U1, U2, delta_u, delta, initial_guess=3.26):
     """
     Solve for the optimal c such that the normalized momentum thickness equals 1.
     
@@ -62,7 +63,7 @@ def get_optimal_c(y, dy, y_ref, U1, delta_u, delta, initial_guess=3.26):
     def f(c):
         c = float(c)
         u = u_profile(y, y_ref, delta_u, delta, c)
-        theta = momentum_thickness(U1, u, dy, delta_u)
+        theta = momentum_thickness(U1, U2, u, dy, delta_u)
         return theta / delta - 1
 
     return fsolve(f, initial_guess)[0]
