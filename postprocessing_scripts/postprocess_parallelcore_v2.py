@@ -11,10 +11,15 @@ import sys
 
 def parse_args():
     
-    filenameparser = argparse.ArgumentParser(description='Filename')
-    filenameparser.add_argument('--fname', type=str, required=True, help='Filename for .csv')
+    parser = argparse.ArgumentParser(description='asdf')
 
-    return filenameparser.parse_args()
+    #1. Filename
+    parser.add_argument('--fname', type=str, required=True, help='Filename for .csv')
+
+    #2. Output path
+    parser.add_argument('--output_path', type=str, required=True)
+
+    return parser.parse_args()
 
 
 def grep_timestep(path = "."):
@@ -289,8 +294,9 @@ def main():
     """
 
     #Filename
-    args = parse_args()
-    fname = args.fname
+    args        = parse_args()
+    fname       = args.fname
+    output_path = args.output_path
     
     #Variables
     delta_theta_g   = []
@@ -315,6 +321,7 @@ def main():
     time_steps   = [i for i in range(start_ts, end_ts, step_ts)]
     t_normalized = [(time_step * dt * U_g) / delta for time_step in time_steps]
     
+    fname = os.path.join(output_path, fname)
     if case.comm.Get_rank() == 0:
         #fname = f"integrand_data_n{nx_g}.csv"
         write_header = not os.path.exists(fname) or os.path.getsize(fname) == 0
