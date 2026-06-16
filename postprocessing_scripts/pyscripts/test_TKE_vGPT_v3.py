@@ -358,7 +358,8 @@ class TKE_Budget:
     
         #Finding the differential
         #dt1_dx1 = first_order_derivative(t1, 1, dx, True) 
-        dt2_dx2 = self.first_order_derivative(t2, 2, self._dy, False) 
+        #dt2_dx2 = self.first_order_derivative(t2, 2, self._dy, False) 
+        dt2_dx2 = self.ddy_y_halo(t2)
         #dt3_dx3 = first_order_derivative(t3, 3, dz, True) 
     
         #Forming the summed term
@@ -385,7 +386,8 @@ class TKE_Budget:
     
         #Compute instantaneous differential term
         dpprime_dx1 = self.first_order_derivative(self._p_prime, 1, self._dx, True)
-        dpprime_dx2 = self.first_order_derivative(self._p_prime, 2, self._dy, False)
+        #dpprime_dx2 = self.first_order_derivative(self._p_prime, 2, self._dy, False)
+        dpprime_dx2 = self.ddy_y_halo(self._p_prime)
         dpprime_dx3 = self.first_order_derivative(self._p_prime, 3, self._dz, True)
             
         #Form the summed term
@@ -425,7 +427,8 @@ class TKE_Budget:
     
         #Finding the differential
         #dt1prime_dx1 = first_order_derivative(t1, 1, dx, True) 
-        dt2prime_dx2 = self.first_order_derivative(t2, 2, self._dy, False) 
+        #dt2prime_dx2 = self.first_order_derivative(t2, 2, self._dy, False) 
+        dt2prime_dx2 = self.ddy_y_halo(t2)
         #dt3prime_dx3 = first_order_derivative(t3, 3, dz, True) 
     
         #Forming the summed term
@@ -454,15 +457,18 @@ class TKE_Budget:
        
         #asdf
         dudoubleprime_dx = self.first_order_derivative(self._u_double_prime, 1, self._dx, True)
-        dudoubleprime_dy = self.first_order_derivative(self._u_double_prime, 2, self._dy, False)
+        #dudoubleprime_dy = self.first_order_derivative(self._u_double_prime, 2, self._dy, False)
+        dudoubleprime_dy = self.ddy_y_halo(self._u_double_prime)
         dudoubleprime_dz = self.first_order_derivative(self._u_double_prime, 3, self._dz, True)
     
         dvdoubleprime_dx = self.first_order_derivative(self._v_double_prime, 1, self._dx, True)
-        dvdoubleprime_dy = self.first_order_derivative(self._v_double_prime, 2, self._dy, False)
+        #dvdoubleprime_dy = self.first_order_derivative(self._v_double_prime, 2, self._dy, False)
+        dvdoubleprime_dy = self.ddy_y_halo(self._v_double_prime)
         dvdoubleprime_dz = self.first_order_derivative(self._v_double_prime, 3, self._dz, True)
     
         dwdoubleprime_dx = self.first_order_derivative(self._w_double_prime, 1, self._dx, True)
-        dwdoubleprime_dy = self.first_order_derivative(self._w_double_prime, 2, self._dy, False)
+        #dwdoubleprime_dy = self.first_order_derivative(self._w_double_prime, 2, self._dy, False)
+        dwdoubleprime_dy = self.ddy_y_halo(self._w_double_prime)
         dwdoubleprime_dz = self.first_order_derivative(self._w_double_prime, 3, self._dz, True)
 
         t1 = self._u_double_prime * dudoubleprime_dx + self._v_double_prime * dvdoubleprime_dx + self._w_double_prime * dwdoubleprime_dx + \
@@ -490,7 +496,8 @@ class TKE_Budget:
         '''
         #dT1_dx = self.first_order_derivative(T1, 1, self._dx, True)
         T2 = T2[None, :, None]
-        dT2_dy = self.first_order_derivative(T2, 2, self._dy, False)
+        #dT2_dy = self.first_order_derivative(T2, 2, self._dy, False)
+        dT2_dy = self.ddy_halo(T2)
         #dT3_dz = self.first_order_derivative(T3, 3, self._dz, True)
 
         #Summing
@@ -657,15 +664,18 @@ class TKE_Budget:
 
         #Derivative terms
         du_dx = self.first_order_derivative(self._u_avg, 1, self._dx, True)
-        du_dy = self.first_order_derivative(self._u_avg, 2, self._dy, False)
+        #du_dy = self.first_order_derivative(self._u_avg, 2, self._dy, False)
+        du_dy = self.ddy_halo(self._u_avg)
         du_dz = self.first_order_derivative(self._u_avg, 3, self._dz, True)
 
         dv_dx = self.first_order_derivative(self._v_avg, 1, self._dx, True)
-        dv_dy = self.first_order_derivative(self._v_avg, 2, self._dy, False)
+        #dv_dy = self.first_order_derivative(self._v_avg, 2, self._dy, False)
+        dv_dy = self.ddy_halo(self._v_avg)
         dv_dz = self.first_order_derivative(self._v_avg, 3, self._dz, True)
 
         dw_dx = self.first_order_derivative(self._w_avg, 1, self._dx, True)
-        dw_dy = self.first_order_derivative(self._w_avg, 2, self._dy, False)
+        #dw_dy = self.first_order_derivative(self._w_avg, 2, self._dy, False)
+        dw_dy = self.ddy_halo(self._w_avg)
         dw_dz = self.first_order_derivative(self._w_avg, 3, self._dz, True)
 
         '''
