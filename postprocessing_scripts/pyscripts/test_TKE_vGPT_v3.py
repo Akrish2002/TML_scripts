@@ -1022,7 +1022,7 @@ class TKE_Budget:
         plt.close(fig)
 
 
-def main(input_path, output_path, ts, stackdirection):
+def main():
     #input_path = "../../../../n256/run4/"
     #out = "n256_ts6500_dissipation_vGPT.npz"
     #ts = 6500
