@@ -1,0 +1,37 @@
+#!/bin/bash 
+#PBS -A BubbleLaden
+#PBS -N postprocess_all
+#PBS -l select=1
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home:flare
+#PBS -q debug
+#PBS -m be
+
+#PBS -o mean_flow_profile.out
+#PBS -e mean_flow_profile.err
+
+cd ${PBS_O_WORKDIR}
+
+NNODES=`wc -l < $PBS_NODEFILE`
+NRANKS=1 #Number of MPI ranks per node
+NDEPTH=1 #Number of hardware threads per rank
+
+NTOTRANKS=$((NNODES * NRANKS))
+
+echo "NUM_OF_NODES= ${NNODES} RANKS_PER_NODE= ${NRANKS} TOTAL_NUM_RANKS= ${NTOTRANKS}"
+
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+module load miniforge3/25.11.0-1
+source activate ~/source-code/envs/fpcslpy/
+
+OUTPUT_PATH="/home/agopalak/member-work/incompressible_tml/thesis/data"
+TIMESTEP=10000
+mpiexec -n 8 python3 $TML_scripts/postprocessing_scripts/postprocess_all.py         \
+        --function mean_flow_profile                                                \
+        --input-path ./                                                             \
+        --output-path $OUTPUT_PATH                                                  \
+        --time-step $TIMESTEP                                                       \
+        --stackdirection 1
+        --std 1 

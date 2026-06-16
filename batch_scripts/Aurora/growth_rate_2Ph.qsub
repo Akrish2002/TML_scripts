@@ -1,0 +1,28 @@
+#!/bin/bash 
+#PBS -A BubbleLaden
+#PBS -N postproc
+#PBS -l select=1
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home:flare
+#PBS -q debug
+#PBS -m be
+
+#PBS -o growth_rate.out
+#PBS -e growth_rate.err
+
+cd ${PBS_O_WORKDIR}
+
+NNODES=`wc -l < $PBS_NODEFILE`
+NRANKS=1 #Number of MPI ranks per node
+NDEPTH=1 #Number of hardware threads per rank
+
+NTOTRANKS=$((NNODES * NRANKS))
+
+echo "NUM_OF_NODES= ${NNODES} RANKS_PER_NODE= ${NRANKS} TOTAL_NUM_RANKS= ${NTOTRANKS}"
+
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+module load miniforge3/25.11.0-1
+source activate ~/source-code/envs/fpcslpy/
+mpiexec -n 8 python3 $TML_scripts/postprocessing_scripts/postprocess_parallelcore_v2.py --fname integrand_data_We20constmu_n1024.csv --output_path ./
