@@ -18,6 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("--time-step", type=int, default=None)
     parser.add_argument("--stackdirection", type=int, default=1)
     parser.add_argument("--std", type=int, default=None)
+    parser.add_argument("--start_ts", type=int, default=0)
 
     args = parser.parse_args()
 
@@ -51,7 +52,7 @@ if __name__ == "__main__":
         compute_reynolds_stresses(args)
 
     elif args.function == "total_dissipation_of_TKE":
-        from pyscripts.total_dissipation_of_TKE import compute_total_dissipation_of_TKE
+        from pyscripts.total_dissipation_of_TKE_v2 import compute_total_dissipation_of_TKE
         compute_total_dissipation_of_TKE(args)
 
     elif args.function == "spectra":

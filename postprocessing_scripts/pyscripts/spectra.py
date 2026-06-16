@@ -175,8 +175,8 @@ def plot_spectra(args):
 
 
     #Labels
-    ax.set_ylabel("$E_{uu}$")
-    ax.set_xlabel("$kx$")
+    ax.set_ylabel("$E(k)_{x}$")
+    ax.set_xlabel("$k_{x}$")
     #To have path of run being used
     p = Path(case)
     short = Path(*p.parts[-2:])

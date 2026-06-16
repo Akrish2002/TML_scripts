@@ -84,6 +84,7 @@ def mean_flow_profile(args):
     
         out_path = Path(args.output_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path = out_path / f"mean_flow_profile_{ny}_{int(args.time_step)}.npz"
     
         np.savez(
                     out_path,

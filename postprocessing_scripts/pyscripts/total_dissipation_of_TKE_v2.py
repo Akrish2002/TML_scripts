@@ -51,6 +51,7 @@ def grep_timestep(path = "."):
 def compute_total_dissipation_of_TKE(args):                                             
                                                                                 
     (start_ts, step_ts, end_ts) = grep_timestep(args.case)                      
+    start_ts = args.start_ts
 
     ctr_file        = os.path.join(args.case, "incompressible_tml.ctr")
     dt              = grep_ctr('dt', ctr_file)
@@ -58,7 +59,7 @@ def compute_total_dissipation_of_TKE(args):
     U_g             = 3.1830988618379066
     delta_ts        = (2. * np.pi) / 100.
 
-    time_steps      = [i for i in range(start_ts, end_ts+step_ts, step_ts)]                  
+    time_steps      = [i for i in range(start_ts, end_ts + step_ts, step_ts)]                  
     t_normalized    = [(time_step * dt * U_g) / delta_ts for time_step in time_steps]
 
     #Debug

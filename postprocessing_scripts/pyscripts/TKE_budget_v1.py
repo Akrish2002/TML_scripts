@@ -13,9 +13,9 @@ def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     Args:
         st (string) : The variable whose data is to be grep-ed
     
-    Return: The variable's value
+    Return:
+        The variable's value
     """
-    
     text = pathlib.Path(ctr_file).read_text()
     pat = re.compile(rf"\b{re.escape(st)}\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
     m = pat.search(text)
@@ -23,21 +23,33 @@ def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
 
     return n
 
-def dissipation(args):
-    T = TKE_Budget(args.case)
-    T._time_step      = args.time_step
-    T._stackdirection = args.stackdirection
+def TKE(args):
+    TKE                 = TKE_Budget(args.case)
+    TKE._time_step      = args.time_step
+    TKE._stackdirection = args.stackdirection
     
-    T.common_terms()
-    T.dissipation()
+    TKE.common_terms()
+    TKE.advection()
+    TKE.pressure_diffusion()
+    TKE.turbulent_diffusion()
+    TKE.viscous_diffusion()
+    TKE.dissipation()
+    TKE.surface_tension()
+    TKE.production()
 
     if T._case.rank == 0:
-        dissipation = T._dissipation_global
-        ny  = T._ny_g
+        TKE_advection()             = TKE.advection()
+        TKE_pressure_diffusion()    = TKE.pressure_diffusion()
+        TKE_turbulent_diffusion()   = TKE.turbulent_diffusion()
+        TKE_viscous_diffusion()     = TKE.viscous_diffusion()
+        TKE_dissipation()           = TKE.dissipation()
+        TKE_surface_tension()       = TKE.surface_tension()
+        TKE_production()            = TKE.production()
+        ny                          = TKE._ny_g
         #Generate y at the cell centers, hardcoded for 2pi
         y = (np.arange(ny) + 0.5) * (2*np.pi / ny)  
 
-        print("--Computing dissipation!")
+        print("-- Computing TKE budgets!")
 
         U_l              = 0.
         U_g              = 3.1830988618379066
@@ -50,26 +62,31 @@ def dissipation(args):
         ts              = args.time_step
         t_normalized    = (ts * dt * U_g)/delta_ts
 
-        if dissipation.ndim != 1 or dissipation.shape[0] != ny:
-            raise ValueError(f"dissipation shape mismatch: got {dissipation.shape}, expected ({ny},)")
+        if TKE_advection.ndim != 1 or TKE_advection.shape[0] != ny:
+            raise ValueError(f"TKE shape mismatch: got {TKE.shape}, expected ({ny},)")
     
         out_path = Path(args.output_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path = out_path / f"Dissipation_{ny}_{int(args.time_step)}.npz"
     
         np.savez(
                     out_path,
-                    case             =   str(Path(args.case).resolve()),
+                    case                    =   str(Path(args.case).resolve()),
 
-                    time_step        =   int(args.time_step),
-                    t_normalized     =   np.float64(t_normalized),
-                    ny               =   int(ny),
+                    time_step               =   int(args.time_step),
+                    t_normalized            =   np.float64(t_normalized),
+                    ny                      =   int(ny),
 
-                    y                =   y.astype(np.float64),
-                    dissipation      =   dissipation.astype(np.float64),
+                    y                        =   y.astype(np.float64),
+                    TKE_advection            =   TKE_advection.astype(np.float64)
+                    TKE_pressure_diffusion   =   TKE_pressure_diffusion.astype(np.float64)
+                    TKE_turbulent_diffusion  =   TKE_turbulent_diffusion.astype(np.float64)
+                    TKE_viscous_diffusion    =   TKE_viscous_diffusion.astype(np.float64)
+                    TKE_dissipation          =   TKE_dissipation.astype(np.float64)
+                    TKE_surface_tension      =   TKE_surface_tension.astype(np.float64)
+                    TKE_production           =   TKE_production.astype(np.float64)
+
                 )
         print(f"[rank0] wrote {out_path} (ny={ny}, ts={args.time_step})")
-
 
 #------------------------------------------------------------------------------
 
@@ -86,7 +103,7 @@ def apply_paper_style(ax):
     # tick style
     ax.tick_params(direction="out", length=4, width=1.0, colors="k")
 
-def load_npz_dissipation(path: str):
+def load_npz_TKE(path: str):
     d              = np.load(path, allow_pickle=True)
     case           = str(d["case"])
 
@@ -96,21 +113,21 @@ def load_npz_dissipation(path: str):
     ny             = int(d["ny"])
     y              = d["y"].astype(np.float64)
 
-    dissipation    = d["dissipation"].astype(np.float64)
+    TKE            = d["TKE"].astype(np.float64)
 
     print("y shape: ", y.shape)
-    print("dissipation shape: ", dissipation.shape)
+    print("TKE shape: ", TKE.shape)
 
     if(y.ndim != 1):
         raise ValueError(f"Size error while loading dataset, please check the generated dataset!")
 
-    if(dissipation.ndim != 1):
+    if(TKE.ndim != 1):
         raise ValueError(f"Size error while loading dataset, please check the generated dataset!")
 
-    return case, t_normalized, ny, y, dissipation
+    return case, t_normalized, ny, y, TKE
 
-def plot_dissipation(args):
-    entries = [load_npz_dissipation(f) for f in args.inputs]                                
+def plot_TKE(args):
+    entries = [load_npz_TKE(f) for f in args.inputs]                                
     case    = [entry[0] for entry in entries]
                                                                                 
     #Paper-style plot                                                           
@@ -118,7 +135,7 @@ def plot_dissipation(args):
     ax = fig.add_subplot(111)                                                   
     dash_cycle = ["-", ":", "--", "-.", (0, (5, 2)), (0, (3, 1, 1, 1))]
 
-    for idx, (case, t_normalized, ny, y, dissipation) in enumerate(entries):
+    for idx, (case, t_normalized, ny, y, TKE) in enumerate(entries):
 
         lab = (
                 args.labels[idx]
@@ -128,7 +145,7 @@ def plot_dissipation(args):
 
         #Zoom mask in this
         x = y
-        y = dissipation
+        y = TKE
         if args.zoom:
             x1 = args.zoom - args.zoom_window
             x2 = args.zoom + args.zoom_window
@@ -151,18 +168,18 @@ def plot_dissipation(args):
         )
 
     #Labels
-    ax.set_ylabel(r"$\varepsilon$", fontsize=16)
+    ax.set_ylabel(r"$k = \frac{1}{2}\langle u_i u_i \rangle$")
     ax.set_xlabel(r"$y$", fontsize=16)
 
-    #To have path of run in the bottom of the screen
-    #p = Path(case)
-    #short = Path(*p.parts[-2:])
-    #fig.text(
-    #    0.98, 0.01, short,
-    #    ha="right",
-    #    va="bottom",
-    #    fontsize=5
-    #)
+    To have path of run in the bottom of the screen
+    p = Path(case)
+    short = Path(*p.parts[-2:])
+    fig.text(
+        0.98, 0.01, short,
+        ha="right",
+        va="bottom",
+        fontsize=5
+    )
 
     if args.zoom:
         ax.set_xlim(args.zoom - args.zoom_window, args.zoom + args.zoom_window)

@@ -91,8 +91,9 @@ def compute_reynolds_number(args):
             t_normalized.append(t_star)
 
         if case.rank == 0:
-            out_path = Path(args.out)
+            out_path = Path(args.output_path)
             out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path = out_path / f"reynolds_number_{ny}_{int(args.time_step)}.npz"
 
             np.savez(
                         out_path,
