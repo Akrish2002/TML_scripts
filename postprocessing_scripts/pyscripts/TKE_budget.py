@@ -24,9 +24,9 @@ def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     return n
 
 def TKE(args):
-    T = TKE_Budget(args.case)
-    T._time_step      = args.time_step
-    T._stackdirection = args.stackdirection
+    TKE                 = TKE_Budget(args.case)
+    TKE._time_step      = args.time_step
+    TKE._stackdirection = args.stackdirection
     
     TKE.common_terms()
     TKE.advection()
@@ -38,8 +38,14 @@ def TKE(args):
     TKE.production()
 
     if T._case.rank == 0:
-        TKE = T._TKE_global
-        ny  = T._ny_g
+        TKE_advection()             = TKE.advection()
+        TKE_pressure_diffusion()    = TKE.pressure_diffusion()
+        TKE_turbulent_diffusion()   = TKE.turbulent_diffusion()
+        TKE_viscous_diffusion()     = TKE.viscous_diffusion()
+        TKE_dissipation()           = TKE.dissipation()
+        TKE_surface_tension()       = TKE.surface_tension()
+        TKE_production()            = TKE.production()
+        ny                          = TKE._ny_g
         #Generate y at the cell centers, hardcoded for 2pi
         y = (np.arange(ny) + 0.5) * (2*np.pi / ny)  
 
@@ -56,7 +62,7 @@ def TKE(args):
         ts              = args.time_step
         t_normalized    = (ts * dt * U_g)/delta_ts
 
-        if TKE.ndim != 1 or TKE.shape[0] != ny:
+        if TKE_advection.ndim != 1 or TKE_advection.shape[0] != ny:
             raise ValueError(f"TKE shape mismatch: got {TKE.shape}, expected ({ny},)")
     
         out_path = Path(args.output_path)
@@ -64,14 +70,21 @@ def TKE(args):
     
         np.savez(
                     out_path,
-                    case             =   str(Path(args.case).resolve()),
+                    case                    =   str(Path(args.case).resolve()),
 
-                    time_step        =   int(args.time_step),
-                    t_normalized     =   np.float64(t_normalized),
-                    ny               =   int(ny),
+                    time_step               =   int(args.time_step),
+                    t_normalized            =   np.float64(t_normalized),
+                    ny                      =   int(ny),
 
-                    y                =   y.astype(np.float64),
-                    TKE              =   TKE.astype(np.float64),
+                    y                        =   y.astype(np.float64),
+                    TKE_advection            =   TKE_advection.astype(np.float64)
+                    TKE_pressure_diffusion   =   TKE_pressure_diffusion.astype(np.float64)
+                    TKE_turbulent_diffusion  =   TKE_turbulent_diffusion.astype(np.float64)
+                    TKE_viscous_diffusion    =   TKE_viscous_diffusion.astype(np.float64)
+                    TKE_dissipation          =   TKE_dissipation.astype(np.float64)
+                    TKE_surface_tension      =   TKE_surface_tension.astype(np.float64)
+                    TKE_production           =   TKE_production.astype(np.float64)
+
                 )
         print(f"[rank0] wrote {out_path} (ny={ny}, ts={args.time_step})")
 
