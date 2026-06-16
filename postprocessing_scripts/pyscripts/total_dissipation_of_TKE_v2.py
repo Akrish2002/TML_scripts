@@ -78,7 +78,7 @@ def compute_total_dissipation_of_TKE(args):
         f = open(fname, "a", newline="")
         w = csv.writer(f)
         if write_header:
-            w.writerow(["NormalizedTime", "TotalDissipation"])
+            w.writerow(["TimeStep", "NormalizedTime", "TotalDissipation"])
     else:
         f = w = None
 
