@@ -51,7 +51,6 @@ def grep_timestep(path = "."):
 def compute_total_dissipation_of_TKE(args):                                             
                                                                                 
     (start_ts, step_ts, end_ts) = grep_timestep(args.case)                      
-    start_ts = 76000
 
     ctr_file        = os.path.join(args.case, "incompressible_tml.ctr")
     dt              = grep_ctr('dt', ctr_file)
@@ -74,7 +73,7 @@ def compute_total_dissipation_of_TKE(args):
     dy                       = 2 * np.pi / ny                               
 
     if T._case.rank == 0:
-        fname = f"total_dissipation_rate_{ny}.csv"
+        fname = os.path.join(args.output_path, f"total_dissipation_rate_{ny}.csv")
         write_header = not os.path.exists(fname) or os.path.getsize(fname) == 0
         f = open(fname, "a", newline="")
         w = csv.writer(f)
@@ -139,6 +138,8 @@ def compute_total_dissipation_of_TKE(args):
         #        )                                                               
         #print(f"[rank0] wrote {out_path} (ny={ny})")                            
 
+    if(T._case.rank == 0):
+        f.close()
     del(T)
 #------------------------------------------------------------------------------
 

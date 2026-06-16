@@ -73,12 +73,12 @@ def compute_total_dissipation_of_TKE(args):
     dy                       = 2 * np.pi / ny                               
 
     if T._case.rank == 0:
-        fname = f"total_dissipation_rate_{ny}.csv"
+        fname = os.path.join(args.output_path, f"total_dissipation_rate_{ny}.csv")
         write_header = not os.path.exists(fname) or os.path.getsize(fname) == 0
         f = open(fname, "a", newline="")
         w = csv.writer(f)
         if write_header:
-            w.writerow(["NormalizedTime", "TotalDissipation"])
+            w.writerow(["TimeStep", "NormalizedTime", "TotalDissipation"])
     else:
         f = w = None
 
@@ -138,6 +138,8 @@ def compute_total_dissipation_of_TKE(args):
         #        )                                                               
         #print(f"[rank0] wrote {out_path} (ny={ny})")                            
 
+    if(T._case.rank == 0):
+        f.close()
     del(T)
 #------------------------------------------------------------------------------
 
