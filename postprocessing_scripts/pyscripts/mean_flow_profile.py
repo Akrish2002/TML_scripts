@@ -51,8 +51,10 @@ def mean_flow_profile(args):
         t_normalized    = (ts * dt * U_g)/delta_ts
 
         #Generating y_grid
-        step   = 2 * np.pi / ny
-        y_grid = np.arange(0, 2 * np.pi, step)
+        dy = 2 * np.pi / ny
+        print("--Using hardcoded domain size")
+        #y_grid = np.arange(0, 2 * np.pi, step)
+        y_grid = (np.arange(ny) + 0.5) * (dy)
 
         #Finding U(x, y_0.1 & 0.9, z) 
         print("-- The choice of constructing the similarity variable has to be justified")
