@@ -497,7 +497,7 @@ class TKE_Budget:
         #dT1_dx = self.first_order_derivative(T1, 1, self._dx, True)
         T2 = T2[None, :, None]
         #dT2_dy = self.first_order_derivative(T2, 2, self._dy, False)
-        dT2_dy = self.ddy_halo(T2)
+        dT2_dy = self.ddy_y_halo(T2)
         #dT3_dz = self.first_order_derivative(T3, 3, self._dz, True)
 
         #Summing
@@ -665,17 +665,17 @@ class TKE_Budget:
         #Derivative terms
         du_dx = self.first_order_derivative(self._u_avg, 1, self._dx, True)
         #du_dy = self.first_order_derivative(self._u_avg, 2, self._dy, False)
-        du_dy = self.ddy_halo(self._u_avg)
+        du_dy = self.ddy_y_halo(self._u_avg)
         du_dz = self.first_order_derivative(self._u_avg, 3, self._dz, True)
 
         dv_dx = self.first_order_derivative(self._v_avg, 1, self._dx, True)
         #dv_dy = self.first_order_derivative(self._v_avg, 2, self._dy, False)
-        dv_dy = self.ddy_halo(self._v_avg)
+        dv_dy = self.ddy_y_halo(self._v_avg)
         dv_dz = self.first_order_derivative(self._v_avg, 3, self._dz, True)
 
         dw_dx = self.first_order_derivative(self._w_avg, 1, self._dx, True)
         #dw_dy = self.first_order_derivative(self._w_avg, 2, self._dy, False)
-        dw_dy = self.ddy_halo(self._w_avg)
+        dw_dy = self.ddy_y_halo(self._w_avg)
         dw_dz = self.first_order_derivative(self._w_avg, 3, self._dz, True)
 
         '''
@@ -1022,77 +1022,32 @@ class TKE_Budget:
         plt.close(fig)
 
 
-def main():
-    #TKE = TKE_Budget("/ccs/home/abhi/member-work/incompressible-tml/BaseCase/n512")
-    #TKE = TKE_Budget("../")
-
-    TKE = TKE_Budget("../BaseCase/n256/run4")
-    TKE._time_step = 7500
-    TKE._stackdirection = 1
-
-    #TKE = TKE_Budget("../")
-    #TKE._time_step = 12000
-    #TKE._stackdirection = 1
-
-    #TKE = TKE_Budget("../BaseCase/n1024/run6")
-    #TKE._time_step = 100000
-    #TKE._stackdirection = 1
-
-    #TKE = TKE_Budget("../BaseCase/n1024/run10")
-    #TKE._time_step = 102070
-    #TKE._stackdirection = 1
-
-    TKE.common_terms()
-    #TKE.advection()
-    #TKE.pressure_diffusion()
-    #TKE.turbulent_diffusion()
-    #TKE.viscous_diffusion()
-    #TKE.dissipation()
-    #TKE.surface_tension()
-    #TKE.production()
-    #TKE.compute_spectra()
-    #TKE.sum_all_terms()
-
-    #TKE.plot(
-    #    fname="TKE_Budget_n256_ts7500.png",
-    #    title="M1(256³)",
-    #    zoom_pi=True,
-    #    pi_window=2.5,
-    #)
-
-    #TKE.plot(
-    #    fname="tke_budget_n512.png",
-    #    title="M2(512³)",
-    #    zoom_pi=True,
-    #    pi_window=2.5,
-    #)
-
-    #TKE.plot(
-    #    fname="TKE_Budget_n1024_ts100000.png",
-    #    title="M3(1024³)",
-    #    zoom_pi=True,
-    #    pi_window=2.5,
-    #)
-
-
-    #case = "../../../../n256/run4/"
+def main(input_path, output_path, ts, stackdirection):
+    #input_path = "../../../../n256/run4/"
     #out = "n256_ts6500_dissipation_vGPT.npz"
     #ts = 6500
-
-    #case = "../"
-    #out = "n512_ts11000_dissipation_vGPT.npz"
-    #ts = 11000
-
-    #case = "../../../n1024/run10"
-    #out = "n1024_ts102070_surface_tension_vGPT.npz"
-    #ts = 102070
 
     #T = TKE_Budget(case)
     #T._time_step      = ts
     #T._stackdirection = 1
 
-    #T.common_terms()
-    #T.surface_tension()
+    TKE.common_terms()
+    TKE.advection()
+    TKE.pressure_diffusion()
+    TKE.turbulent_diffusion()
+    TKE.viscous_diffusion()
+    TKE.dissipation()
+    TKE.surface_tension()
+    TKE.production()
+    #TKE.compute_spectra()
+    #TKE.sum_all_terms()
+
+    TKE.plot(
+        fname="TKE_Budget_n256_ts7500.png",
+        title="M1(256³)",
+        zoom_pi=True,
+        pi_window=2.5,
+    )
 
     #if T._case.rank == 0:
     #    ny = T._ny_g
@@ -1114,8 +1069,6 @@ def main():
     #    )
     #    print(f"[rank0] wrote {out_path} (ny={ny}, ts={ts})")
     
-    TKE.reynolds_stresses()
-
 
 if __name__ == "__main__":
     main()
