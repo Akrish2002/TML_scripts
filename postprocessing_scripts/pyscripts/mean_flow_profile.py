@@ -84,7 +84,7 @@ def mean_flow_profile(args):
     
         out_path = Path(args.output_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path = out_path / f"mean_flow_profile_{ny}_{int(args.time_step)}.npz"
+        out_path = out_path / f"mean_flow_profile_n{ny}_ts{int(args.time_step)}.npz"
     
         np.savez(
                     out_path,
@@ -154,8 +154,8 @@ def plot_mean_flow_profile(args):
         x = xi
         y = u_avg_normalized
         if args.zoom:
-            x1 = 0 - args.zoom_window
-            x2 = 0 + args.zoom_window
+            x1 = args.zoom - args.zoom_window
+            x2 = args.zoom + args.zoom_window
             m = (x >= x1) & (x <= x2)
             ax.plot(x[m], y[m], color="r", linestyle=dash_cycle[idx % len(dash_cycle)],
                     linewidth=1.2, label=lab)
@@ -179,7 +179,7 @@ def plot_mean_flow_profile(args):
     )
 
     if args.zoom:
-        ax.set_xlim(0 - args.zoom_window, 0 + args.zoom_window)
+        ax.set_xlim(args.zoom - args.zoom_window, args.zoom + args.zoom_window)
 
     apply_paper_style(ax)
     ax.legend(loc="best", frameon=False)

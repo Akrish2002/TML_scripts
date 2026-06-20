@@ -86,7 +86,7 @@ def compute_reynolds_stresses(args):
     
         out_path = Path(args.output_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path = out_path / f"Reynolds_stresses_{ny}_{int(args.time_step)}.npz"
+        out_path = out_path / f"Reynolds_stresses_n{ny}_ts{int(args.time_step)}.npz"
     
         np.savez(
                     out_path,

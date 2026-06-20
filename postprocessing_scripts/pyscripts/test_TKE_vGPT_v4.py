@@ -998,7 +998,7 @@ class TKE_Budget:
             u_plane    = self._u_double_prime[:, j, :]
             v_plane    = self._v_double_prime[:, j, :]
             w_plane    = self._w_double_prime[:, j, :] 
-            phi2_plane = 1 - self._phi1_prime[:, j, :]
+            phi2_plane = -self._phi1_prime[:, j, :]
 
             #I then construct the correlation with a for loop again
             for r in range(nx):
@@ -1047,7 +1047,7 @@ class TKE_Budget:
             u_plane    = self._u_double_prime[:, j, :]
             v_plane    = self._v_double_prime[:, j, :]
             w_plane    = self._w_double_prime[:, j, :] 
-            phi2_plane = 1 - self._phi1_prime[:, j, :]
+            phi2_plane = -self._phi1_prime[:, j, :]
 
             #I then construct the correlation with a for loop again
             for r in range(nz):

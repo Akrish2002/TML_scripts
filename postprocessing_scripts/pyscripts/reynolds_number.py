@@ -93,7 +93,7 @@ def compute_reynolds_number(args):
         if case.rank == 0:
             out_path = Path(args.output_path)
             out_path.parent.mkdir(parents=True, exist_ok=True)
-            out_path = out_path / f"reynolds_number_{ny}_{int(args.time_step)}.npz"
+            out_path = out_path / f"reynolds_number_n{ny}_ts{int(args.time_step)}.npz"
 
             np.savez(
                         out_path,

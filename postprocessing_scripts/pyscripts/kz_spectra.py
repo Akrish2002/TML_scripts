@@ -58,8 +58,8 @@ def compute_spectra(args):
 
     if T._case.rank == 0:
         #Grepping the required data 
-        E_kx = T._E_kx_global
-        kx   = T._kx_positive_global
+        E_kz = T._E_kz_global
+        kz   = T._kz_positive_global
 
         ny   = T._ny_g
         y_max = T._ymax
@@ -75,12 +75,12 @@ def compute_spectra(args):
         t_normalized    = (ts * dt * U_g)/delta_ts
 
         #if E_kx.ndim != 1 or E_kx.shape[0] != ny:
-        if E_kx.shape[0] != ny:
-            raise ValueError(f"E_kx shape mismatch: got {E_kx.shape}, expected ({ny},)")
+        if E_kz.shape[0] != ny:
+            raise ValueError(f"E_kz shape mismatch: got {E_kz.shape}, ezpected ({ny},)")
     
         out_path = Path(args.output_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path = out_path / f"Euu_spectra_n{ny}_ts{int(args.time_step)}.npz"
+        out_path = out_path / f"Ez_spectra_n{ny}_ts{int(args.time_step)}.npz"
 
         np.savez(
                     out_path,
