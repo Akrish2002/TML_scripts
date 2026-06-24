@@ -1,21 +1,84 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 import argparse
 from pathlib import Path
+import scienceplots
+from cycler import cycler
+import matplotlib.pyplot as plt
 
 
-def apply_paper_style(ax):
-    # light dotted grid
-    ax.grid(True, which="both", linestyle=":", linewidth=0.7, color="0.55")
+def use_paper_style():
+    plt.rcParams.update({
 
-    # black frame
-    for spine in ax.spines.values():
-        spine.set_linewidth(1.2)
-        spine.set_color("k")
+        "axes.prop_cycle": (
+            cycler("color", ["#ff2c00"] * 6) +
+            cycler("linestyle", [
+                "-",
+                ":",
+                "--",
+                "-.",
+                (0, (5, 2)),
+                (0, (3, 1, 1, 1)),
+            ])
+        ),
 
-    # tick style
-    ax.tick_params(direction="out", length=4, width=1.0, colors="k")
+
+        # Figure
+        "figure.figsize": (3.5, 2.625),
+
+        #Font
+        "font.family"                   : "serif",
+        "font.serif"                    : ["STIXGeneral"],
+        "axes.formatter.use_mathtext"   : True,
+        "mathtext.fontset"              : "cm",
+        #"font.size"                     : 10,
+
+        #Ticks
+        "xtick.direction"       : "in",
+        "xtick.major.size"      : 3,
+        "xtick.major.width"     : 0.5,
+        "xtick.minor.size"      : 1.5,
+        "xtick.minor.width"     : 0.5,
+        "xtick.minor.visible"   : True,
+        "xtick.top"             : True,
+
+        "ytick.direction"       : "in",
+        "ytick.major.size"      : 3,
+        "ytick.major.width"     : 0.5,
+        "ytick.minor.size"      : 1.5,
+        "ytick.minor.width"     : 0.5,
+        "ytick.minor.visible"   : True,
+        "ytick.right"           : True,
+
+        #Linewidth
+        "axes.linewidth"    : 0.5,
+        "lines.linewidth"   : 1.0,
+        "grid.linewidth"    : 0.5,
+
+        #Axis
+        "axes.labelsize"    : 10,     
+        "axes.titlesize"    : 10,     
+
+        #Grid
+        "axes.grid"         : True,
+        "axes.axisbelow"    : True,
+        "grid.linestyle"    : "--",
+        "grid.color"        : "0.45",
+        "grid.alpha"        : 0.75,
+
+        #Legend
+        "legend.frameon"    : True,
+        "legend.framealpha" : 1.0, 
+        "legend.fancybox"   : False,
+        "legend.edgecolor"  : "none",
+        "legend.numpoints"  : 1,
+        "legend.loc"        : "best",
+        "legend.fontsize"   : 8,
+
+        #Saving
+        "savefig.bbox"      : "tight",
+        "savefig.pad_inches": 0.05,
+    })
 
 
 def get_grid_name(filename):
@@ -25,7 +88,7 @@ def get_grid_name(filename):
     basename = os.path.basename(filename)
     basename = os.path.splitext(basename)[0]
 
-    return basename.split("_")[-1]
+    return basename.split("_")[-3]
 
 
 def load_csv_thickness(filename):
@@ -68,18 +131,11 @@ def plot_one_quantity(entries, quantity_idx, ylabel, out_name, args):
 
         y = quantities[quantity_idx]
 
-        ax.plot(
-            time_steps,
-            y,
-            color="r",
-            linestyle=dash_cycle[idx % len(dash_cycle)],
-            linewidth=1.2,
-            label=label,
-        )
+        ax.plot(time_steps, y, label=label)
 
         # file path text at bottom-right, like TKE script
         p = Path(filename)
-        short = Path(*p.parts[-2:]) if len(p.parts) >= 2 else p
+        short = Path(*p.parts[-2:-1]) if len(p.parts) >= 2 else p
 
         fig.text(
             0.98,
@@ -87,15 +143,13 @@ def plot_one_quantity(entries, quantity_idx, ylabel, out_name, args):
             str(short),
             ha="right",
             va="bottom",
-            fontsize=5,
+            fontsize=4,
         )
 
-    ax.set_xlabel(r"$t^*$", fontsize=16)
+    ax.set_xlabel(r"$t^*$")
     ax.set_ylabel(ylabel)
 
-    apply_paper_style(ax)
-    ax.legend(loc="best", frameon=False)
-
+    ax.legend()
     fig.tight_layout(pad=1.0)
 
     out_path = Path(args.out_dir) / out_name
@@ -194,4 +248,5 @@ def main():
 
 
 if __name__ == "__main__":
+    use_paper_style()
     main()
