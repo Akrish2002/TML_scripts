@@ -61,6 +61,11 @@ if __name__ == "__main__":
         default=None,
         help="y locations to plot as multiples of initial momentum thickness away from the centerplane"
     )
+    parser.add_argument(
+        "--ensemble-average",
+        action="store_true",
+        help="Average all input files before plotting.",
+    )
     parser.add_argument("--zoom", type=float)
     parser.add_argument("--zoom-window", type=float, default=1.0)
     parser.add_argument("--singlephase", action="store_true")
@@ -117,11 +122,11 @@ if __name__ == "__main__":
         plot_kz_spectra(args)
 
     elif args.function == "streamwise_two_point_correlation":
-        from pyscripts.streamwise_two_point_correlation import plot_streamwise_two_point_correlation
+        from pyscripts.streamwise_two_point_correlation_v2 import plot_streamwise_two_point_correlation
         plot_streamwise_two_point_correlation(args)
 
     elif args.function == "spanwise_two_point_correlation":
-        from pyscripts.spanwise_two_point_correlation import plot_spanwise_two_point_correlation
+        from pyscripts.spanwise_two_point_correlation_v2 import plot_spanwise_two_point_correlation
         plot_spanwise_two_point_correlation(args)
 
     else:

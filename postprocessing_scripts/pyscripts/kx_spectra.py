@@ -7,7 +7,7 @@ import re, pathlib
 import os
 
 from pyscripts.test_TKE_vGPT_v4 import TKE_Budget
-from pyscripts.plot_style import paper_style
+from pyscripts.plot_style import paper_style 
 
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
@@ -165,6 +165,12 @@ def compute_spectra(args):
 
 
 def load_npz_spectra(path: str):
+    rho_g   = 1.0
+    U_l     = 0.0
+    U_g     = 3.1830988618379066
+    delta_U = U_g - U_l
+    delta0 = (2.0 * np.pi) / 100.0
+
     d    = np.load(path, allow_pickle=True)
     case = str(d["case"])
 
@@ -174,10 +180,11 @@ def load_npz_spectra(path: str):
     y_max             = float(d["y_max"])
 
     kx       = d["kx"].astype(np.float64)
-    E_uu_kx  = d["E_uu_kx"].astype(np.float64)
-    E_vv_kx  = d["E_vv_kx"].astype(np.float64)
-    E_ww_kx  = d["E_ww_kx"].astype(np.float64)
-    E_TKE_kx = d["E_TKE_kx"].astype(np.float64)
+    kx_normalized = kx * delta0
+    E_uu_kx  = d["E_uu_kx"].astype(np.float64) / (delta_U **2 * delta0)
+    E_vv_kx  = d["E_vv_kx"].astype(np.float64) / (delta_U **2 * delta0)
+    E_ww_kx  = d["E_ww_kx"].astype(np.float64) / (delta_U **2 * delta0)
+    E_TKE_kx = d["E_TKE_kx"].astype(np.float64)/ (delta_U **2 * delta0)
 
     print("E_uu_kx shape: ", E_uu_kx.shape)
     print("E_vv_kx shape: ", E_vv_kx.shape)
@@ -195,7 +202,8 @@ def load_npz_spectra(path: str):
     if E_TKE_kx.ndim == 1 or E_TKE_kx.shape[1] != kx.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
 
-    return case, t_normalized, ny, y, y_max, kx, E_uu_kx, E_vv_kx, E_ww_kx, E_TKE_kx
+    #Returning all normalized values
+    return case, t_normalized, ny, y, y_max, kx_normalized, E_uu_kx, E_vv_kx, E_ww_kx, E_TKE_kx
 
 
 def plot_spectra(args):
@@ -212,10 +220,10 @@ def plot_spectra(args):
 
     components = get_components(args)
     component_map = {
-        1: ("Euu", "E_uu_kx"),
-        2: ("Evv", "E_vv_kx"),
-        3: ("Eww", "E_ww_kx"),
-        4: ("ETKE", "E_TKE_kx"),
+        1: ("E_{uu}", "E_uu_kx"),
+        2: ("E_{vv}", "E_vv_kx"),
+        3: ("E_{ww}", "E_ww_kx"),
+        4: ("E_{u_iu_i}", "E_TKE_kx"),
     }
 
     curve_count = 0
@@ -226,7 +234,7 @@ def plot_spectra(args):
         case_lab = (
                 args.labels[idx]
                 if args.labels and len(args.labels) == len(entries)
-                else f"{ny}$^3$, t*={t_normalized:.2f}"
+                else f"$t^* = {t_normalized:.2f}$"
               )
 
         y_delta_multiples = get_y_delta_multiples(args)
@@ -247,7 +255,8 @@ def plot_spectra(args):
                 component_label, component_key = component_map[component]
                 E_kx = spectra_map[component_key][m_idx, :]
 
-                lab = f"{case_lab}, {component_label}, y-yc={m:g}$\\delta_{{\\theta,0}}$"
+                #lab = f"{case_lab}, {component_label}, y-yc={m:g}$\\delta_{{\\theta,0}}$"
+                lab = f"{case_lab}, ${component_label}$"
 
                 k_plot = kx[1:]
                 E_plot = E_kx[1:]
@@ -275,8 +284,8 @@ def plot_spectra(args):
         ax.loglog(k_ref, E_ref_1, 'k--', linewidth=1.2, label=r"$k^{-5/3}$")
 
     #Labels
-    ax.set_ylabel("$E(k)_{x}$")
-    ax.set_xlabel("$k_{x}$")
+    ax.set_ylabel("$E(k)_{x} / (\Delta U^2 \delta_0)$")
+    ax.set_xlabel("$k_{x}\delta_0$")
     #To have path of run being used
     p = Path(cases[-1])
     short = Path(*p.parts[-2:])
@@ -295,7 +304,6 @@ def plot_spectra(args):
     #plt.close(fig)
 
     ax.legend()
-    ax.legend()
     fig.tight_layout(pad=1.0)
-    fig.savefig(args.out)
+    fig.savefig(args.out, dpi=300)
     plt.close(fig)

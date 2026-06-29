@@ -7,66 +7,7 @@ import matplotlib.pyplot as plt
 import os
 
 from pyscripts.test_TKE_vGPT_v3 import TKE_Budget
-
-mpl.rcParams.update({
-        # Figure
-        "figure.figsize": (3.5, 2.625),
-
-        #Font
-        "font.family"                   : "serif",
-        "font.serif"                    : ["STIXGeneral"],
-        "axes.formatter.use_mathtext"   : True,
-        "mathtext.fontset"              : "cm",
-        #"font.size"                     : 10,
-
-        #Ticks
-        "xtick.direction"       : "in",
-        "xtick.major.size"      : 3,
-        "xtick.major.width"     : 0.5,
-        "xtick.minor.size"      : 1.5,
-        "xtick.minor.width"     : 0.5,
-        "xtick.minor.visible"   : True,
-        "xtick.top"             : True,
-
-        "ytick.direction"       : "in",
-        "ytick.major.size"      : 3,
-        "ytick.major.width"     : 0.5,
-        "ytick.minor.size"      : 1.5,
-        "ytick.minor.width"     : 0.5,
-        "ytick.minor.visible"   : True,
-        "ytick.right"           : True,
-
-        #Linewidth
-        "lines.linewidth"   : 1.0,
-
-        #Axis
-        "axes.linewidth"    : 1.2,
-        "axes.labelsize"    : 10,     
-        "axes.titlesize"    : 8,     
-        "axes.grid"         : True,
-        "axes.axisbelow"    : True,
-        "axes.edgecolor"    : "k",
-
-        #Grid
-        "grid.linewidth"    : 0.5,
-        "grid.linestyle"    : "--",
-        "grid.color"        : "0.45",
-        "grid.alpha"        : 0.25,
-
-        #Legend
-        "legend.frameon"    : True,
-        "legend.framealpha" : 1.0, 
-        "legend.fancybox"   : False,
-        "legend.edgecolor"  : "none",
-        "legend.numpoints"  : 1,
-        "legend.loc"        : "best",
-        "legend.fontsize"   : 8,
-
-        #Saving
-        "savefig.bbox"      : "tight",
-        "savefig.pad_inches": 0.05,
-    })
-
+from pyscripts.plot_style import paper_style 
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     """ To grep all the required data from the CTR file
@@ -168,31 +109,38 @@ def compute_reynolds_stresses(args):
 #------------------------------------------------------------------------------
 
 #Plotting
-def apply_paper_style(ax):
-    # light dotted grid
-    ax.grid(True, which="both", linestyle=":", linewidth=0.7, color="0.55")
-
-    # black frame
-    for spine in ax.spines.values():
-        spine.set_linewidth(1.2)
-        spine.set_color("k")
-
-    # tick style
-    ax.tick_params(direction="out", length=4, width=1.0, colors="k")
+#def apply_paper_style(ax):
+#    # light dotted grid
+#    ax.grid(True, which="both", linestyle=":", linewidth=0.7, color="0.55")
+#
+#    # black frame
+#    for spine in ax.spines.values():
+#        spine.set_linewidth(1.2)
+#        spine.set_color("k")
+#
+#    # tick style
+#    ax.tick_params(direction="out", length=4, width=1.0, colors="k")
 
 def load_npz_reynolds_stresses(path: str):
+    U_l     = -(0.5 * 3.1830988618379066)
+    U_g     =  (0.5 * 3.1830988618379066)
+    delta_U = U_g - U_l
+    delta0 = (2.0 * np.pi) / 100.0
+
     d               = np.load(path, allow_pickle=True)
     case            = str(d["case"])
 
     time_step       = int(d["time_step"])
-    t_normalized    = float(d["t_normalized"])
+    #This is to compensate for the incorrect normalization missing a factor of
+    #2 while saving.
+    t_normalized    = 2 * float(d["t_normalized"])
     ny              = int(d["ny"])
 
     xi              = d["xi"].astype(np.float64)
-    uprime_uprime   = d["uprime_uprime"].astype(np.float64)
-    vprime_vprime   = d["vprime_vprime"].astype(np.float64)
-    wprime_wprime   = d["wprime_wprime"].astype(np.float64)
-    uprime_vprime   = d["uprime_vprime"].astype(np.float64)
+    uprime_uprime   = d["uprime_uprime"].astype(np.float64) / delta_U**2
+    vprime_vprime   = d["vprime_vprime"].astype(np.float64) / delta_U**2
+    wprime_wprime   = d["wprime_wprime"].astype(np.float64) / delta_U**2
+    uprime_vprime   = d["uprime_vprime"].astype(np.float64) / delta_U**2
 
     print("uprime_uprime shape: ", uprime_uprime.shape)
     print("xi shape: ", xi.shape)
@@ -214,6 +162,7 @@ def plot_reynolds_stresses(args):
     case    = [entry[0] for entry in entries]
                                                                                 
     #Paper-style plot                                                           
+    paper_style()
     fig = plt.figure(figsize=(args.figsize[0], args.figsize[1]), dpi=150)       
     ax = fig.add_subplot(111)                                                   
     dash_cycle = ["-", ":", "--", "-.", (0, (5, 2)), (0, (3, 1, 1, 1))]
@@ -228,7 +177,7 @@ def plot_reynolds_stresses(args):
                 args.labels[idx]
                 if args.labels and len(args.labels) == len(entries)
                 #else f"{Path(case).name} ({ny}$^3$)"
-                else f"{ny}$^3$, t*={t_normalized:.2f}"
+                else f"$t^* = {t_normalized:.2f}$"
               )
 
         #Zoom mask in this
@@ -238,10 +187,10 @@ def plot_reynolds_stresses(args):
              vprime_vprime,
              wprime_wprime,
              uprime_vprime],
-            [r"$\overline{u'u'}$",
-             r"$\overline{v'v'}$",
-             r"$\overline{w'w'}$",
-             r"$\overline{u'v'}$"]
+            [r"$\langle {u'u'} \rangle / \Delta U^2$",
+             r"$\langle {v'v'} \rangle / \Delta U^2$",
+             r"$\langle {w'w'} \rangle / \Delta U^2$",
+             r"$\langle {u'v'} \rangle / \Delta U^2$"]
         ]
         y = y_list[0][args.reynolds_stress_components - 1]
 
@@ -250,11 +199,11 @@ def plot_reynolds_stresses(args):
             x2 = args.zoom + args.zoom_window
             m = (x >= x1) & (x <= x2)
             ax.plot(x[m], y[m], color="r", linestyle=dash_cycle[idx % len(dash_cycle)],
-                    linewidth=1.2, label=lab)
+                    label=lab)
 
         else:
             ax.plot(x, y, color="r", linestyle=dash_cycle[idx % len(dash_cycle)],
-                    linewidth=1.2, label=lab)
+                    label=lab)
 
 
     #Labels
@@ -274,7 +223,7 @@ def plot_reynolds_stresses(args):
         ax.set_xlim(args.zoom - args.zoom_window, args.zoom + args.zoom_window)
 
     #apply_paper_style(ax)
-    ax.legend(loc="best", frameon=False)
+    ax.legend()
     ax.legend()
     fig.tight_layout(pad=1.0)
     fig.savefig(args.out, dpi=300)

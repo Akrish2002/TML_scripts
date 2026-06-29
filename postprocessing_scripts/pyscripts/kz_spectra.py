@@ -7,6 +7,7 @@ import re, pathlib
 import os
 
 from pyscripts.test_TKE_vGPT_v4 import TKE_Budget
+from pyscripts.plot_style import paper_style 
 
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
@@ -164,6 +165,12 @@ def apply_paper_style(ax):
 
 
 def load_npz_spectra(path: str):
+    rho_g   = 1.0
+    U_l     = 0.0
+    U_g     = 3.1830988618379066
+    delta_U = U_g - U_l
+    delta0 = (2.0 * np.pi) / 100.0
+
     d    = np.load(path, allow_pickle=True)
     case = str(d["case"])
 
@@ -173,10 +180,11 @@ def load_npz_spectra(path: str):
     y_max             = float(d["y_max"])
 
     kz       = d["kz"].astype(np.float64)
-    E_uu_kz  = d["E_uu_kz"].astype(np.float64)
-    E_vv_kz  = d["E_vv_kz"].astype(np.float64)
-    E_ww_kz  = d["E_ww_kz"].astype(np.float64)
-    E_TKE_kz = d["E_TKE_kz"].astype(np.float64)
+    kz_normalized = kz * delta0
+    E_uu_kz  = d["E_uu_kz"].astype(np.float64) / (delta_U**2 * delta0)
+    E_vv_kz  = d["E_vv_kz"].astype(np.float64) / (delta_U**2 * delta0)
+    E_ww_kz  = d["E_ww_kz"].astype(np.float64) / (delta_U**2 * delta0)
+    E_TKE_kz = d["E_TKE_kz"].astype(np.float64) / (delta_U**2 * delta0)
 
     print("E_uu_kz shape: ", E_uu_kz.shape)
     print("E_vv_kz shape: ", E_vv_kz.shape)
@@ -194,7 +202,7 @@ def load_npz_spectra(path: str):
     if E_TKE_kz.ndim == 1 or E_TKE_kz.shape[1] != kz.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
 
-    return case, t_normalized, ny, y, y_max, kz, E_uu_kz, E_vv_kz, E_ww_kz, E_TKE_kz
+    return case, t_normalized, ny, y, y_max, kz_normalized, E_uu_kz, E_vv_kz, E_ww_kz, E_TKE_kz
 
 
 def plot_spectra(args):
@@ -203,16 +211,17 @@ def plot_spectra(args):
     cases   = [entry[0] for entry in entries]
                                                                                 
     #Paper-style plot                                                           
+    paper_style()
     fig = plt.figure(figsize=(args.figsize[0], args.figsize[1]), dpi=150)       
     ax = fig.add_subplot(111)                                                   
     dash_cycle = ["-", ":", "--", "-.", (0, (5, 2)), (0, (3, 1, 1, 1))]
 
     components = get_components(args)
     component_map = {
-        1: ("Euu", "E_uu_kz"),
-        2: ("Evv", "E_vv_kz"),
-        3: ("Eww", "E_ww_kz"),
-        4: ("ETKE", "E_TKE_kz"),
+        1: ("E_{uu}", "E_uu_kz"),
+        2: ("E_{vv}", "E_vv_kz"),
+        3: ("E_{ww}", "E_ww_kz"),
+        4: ("E_{u_iu_i}", "E_TKE_kz"),
     }
 
     curve_count = 0
@@ -223,7 +232,7 @@ def plot_spectra(args):
         case_lab = (
                 args.labels[idx]
                 if args.labels and len(args.labels) == len(entries)
-                else f"{ny}$^3$, t*={t_normalized:.2f}"
+                else f"$t^* = {t_normalized:.2f}$"
               )
 
         y_delta_multiples = get_y_delta_multiples(args)
@@ -244,7 +253,8 @@ def plot_spectra(args):
                 component_label, component_key = component_map[component]
                 E_kz = spectra_map[component_key][m_idx, :]
 
-                lab = f"{case_lab}, {component_label}, y-yc={m:g}$\\delta_{{\\theta,0}}$"
+                #lab = f"{case_lab}, {component_label}, y-yc={m:g}$\\delta_{{\\theta,0}}$"
+                lab = f"{case_lab}, ${component_label}$"
 
                 k_plot = kz[1:]
                 E_plot = E_kz[1:]
@@ -253,7 +263,7 @@ def plot_spectra(args):
                 valid = E_plot >= E_floor
                 
                 ax.loglog(k_plot[valid], E_plot[valid], color="r", 
-                        linestyle=dash_cycle[curve_count % len(dash_cycle)], linewidth=1.2, label=lab)
+                        linestyle=dash_cycle[curve_count % len(dash_cycle)], label=lab)
 
                 if k_ref_for_slope is None:
                     k_ref_for_slope = kz[1:]
@@ -275,8 +285,8 @@ def plot_spectra(args):
         #ax.loglog(k_ref, E_ref_2, 'k-.', linewidth=1.2, label=r"$k^{-10/3}$")
 
     #Labels
-    ax.set_ylabel("$E(k)_{z}$")
-    ax.set_xlabel("$k_{z}$")
+    ax.set_ylabel("$E(k)_{z} / (\Delta U^2 \delta_0)$")
+    ax.set_xlabel("$k_{z}\delta_0$")
     #To have path of run being used
     p = Path(cases[-1])
     short = Path(*p.parts[-2:])
@@ -287,9 +297,7 @@ def plot_spectra(args):
         fontsize=5
     )
 
-    apply_paper_style(ax)
-    ax.legend(loc="best", frameon=False)
-    ax.legend(fontsize=6)
+    ax.legend()
     fig.tight_layout(pad=1.0)
     fig.savefig(args.out, dpi=300)
     plt.close(fig)
