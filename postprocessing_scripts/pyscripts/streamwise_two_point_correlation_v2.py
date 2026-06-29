@@ -331,7 +331,7 @@ def plot_streamwise_two_point_correlation(args):
     #Horizontal line at y = 0
     plt.axhline(y=0, linestyle="--", color="k", linewidth=0.5, alpha=0.5)
     #Labels
-    ax.set_ylabel("$R(r_x, z) / R(0, x)$")
+    ax.set_ylabel("$R(r_x, x) / R(0, x)$")
     ax.set_xlabel("$r_x / \delta_{0}$")
     #To have path of run being used
     p = Path(cases[-1])
