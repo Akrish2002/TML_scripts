@@ -100,8 +100,8 @@ def compute_reynolds_stresses(args):
 
     if T._case.rank == 0:
         #Grepping the required data 
-        U_l             = 0.
-        U_g             = 3.1830988618379066
+        U_l              = -0.5 * (3.1830988618379066)
+        U_g              =  0.5 * (3.1830988618379066)
         print("-- Using hardcoded U_g and U_l values!")
         ny              = T._ny_g
         uprime_uprime   = T._uprime_uprime_global
@@ -270,7 +270,7 @@ def plot_reynolds_stresses(args):
         fontsize=5
     )
 
-    if args.zoom:
+    if args.zoom is not None:
         ax.set_xlim(args.zoom - args.zoom_window, args.zoom + args.zoom_window)
 
     #apply_paper_style(ax)

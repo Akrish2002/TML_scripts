@@ -8,6 +8,65 @@ import os
 
 from pyscripts.test_TKE_vGPT_v4 import TKE_Budget
 
+mpl.rcParams.update({
+        # Figure
+        "figure.figsize": (3.5, 2.625),
+
+        #Font
+        "font.family"                   : "serif",
+        "font.serif"                    : ["STIXGeneral"],
+        "axes.formatter.use_mathtext"   : True,
+        "mathtext.fontset"              : "cm",
+        #"font.size"                     : 10,
+
+        #Ticks
+        "xtick.direction"       : "in",
+        "xtick.major.size"      : 3,
+        "xtick.major.width"     : 0.5,
+        "xtick.minor.size"      : 1.5,
+        "xtick.minor.width"     : 0.5,
+        "xtick.minor.visible"   : True,
+        "xtick.top"             : True,
+
+        "ytick.direction"       : "in",
+        "ytick.major.size"      : 3,
+        "ytick.major.width"     : 0.5,
+        "ytick.minor.size"      : 1.5,
+        "ytick.minor.width"     : 0.5,
+        "ytick.minor.visible"   : True,
+        "ytick.right"           : True,
+
+        #Linewidth
+        "lines.linewidth"   : 1.0,
+
+        #Axis
+        "axes.linewidth"    : 1.2,
+        "axes.labelsize"    : 10,     
+        "axes.titlesize"    : 8,     
+        "axes.grid"         : True,
+        "axes.axisbelow"    : True,
+        "axes.edgecolor"    : "k",
+
+        #Grid
+        "grid.linewidth"    : 0.5,
+        "grid.linestyle"    : "--",
+        "grid.color"        : "0.45",
+        "grid.alpha"        : 0.25,
+
+        #Legend
+        "legend.frameon"    : True,
+        "legend.framealpha" : 1.0, 
+        "legend.fancybox"   : False,
+        "legend.edgecolor"  : "none",
+        "legend.numpoints"  : 1,
+        "legend.loc"        : "best",
+        "legend.fontsize"   : 8,
+
+        #Saving
+        "savefig.bbox"      : "tight",
+        "savefig.pad_inches": 0.05,
+    })
+
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     """ To grep all the required data from the CTR file
@@ -69,7 +128,8 @@ def get_y_indices(y, y_max, y_delta_multiples):
 
     for m in y_delta_multiples:
         y_target = yc + m * delta_theta0
-        idx = int(np.argmin(np.abs(y - y_target)))
+        #idx = int(np.argmin(np.abs(y - y_target)))
+        idx = 512
         y_indices.append(idx)
         y_selected.append(y[idx])
 
@@ -77,8 +137,8 @@ def get_y_indices(y, y_max, y_delta_multiples):
 
 
 def get_components(args):
-    if hasattr(args, "spectra_components") and args.spectra_components is not None:
-        components = list(args.spectra_components)
+    if hasattr(args, "twopoint_correlation_components") and args.twopoint_correlation_components is not None:
+        components = list(args.twopoint_correlation_components)
     else:
         components = [1, 2, 3, 4]
 
@@ -86,25 +146,26 @@ def get_components(args):
 
 
 #Computing
-def compute_spectra(args):
+def compute_streamwise_two_point_correlation(args):
     T = TKE_Budget(args.case)
     T._time_step      = args.time_step
     T._stackdirection = args.stackdirection
     
     T.common_terms()
-    T.compute_spectra_along_kz()
+    T.compute_streamwise_two_point_correlation()
 
     if T._case.rank == 0:
         #Grepping the required data 
-        E_uu_kz  = T._E_uu_kz_global
-        E_vv_kz  = T._E_vv_kz_global
-        E_ww_kz  = T._E_ww_kz_global
-        E_TKE_kz = T._E_TKE_kz_global
-        kz       = T._kz_positive_global
+        Ruu_x       = T._Ruu_x_global
+        Rvv_x       = T._Rvv_x_global
+        Rww_x       = T._Rww_x_global
+        Rphi2phi2_x = T._Rphi2phi2_x_global
 
         ny    = T._ny_g
+        nx    = T._nx_g
         y_max = T._ymax
         y     = (np.arange(ny) + 0.5) * (y_max / ny)  
+        rx    = np.arange(nx) * T._dx
 
         #Computing normalized time
         U_l             = 0.
@@ -115,18 +176,18 @@ def compute_spectra(args):
         ts              = args.time_step
         t_normalized    = (ts * dt * U_g)/delta_ts
 
-        if E_uu_kz.shape[0] != ny:
-            raise ValueError(f"E_uu_kz shape mismatch: got {E_uu_kz.shape}, expected ({ny},)")
-        if E_vv_kz.shape[0] != ny:
-            raise ValueError(f"E_vv_kz shape mismatch: got {E_vv_kz.shape}, expected ({ny},)")
-        if E_ww_kz.shape[0] != ny:
-            raise ValueError(f"E_ww_kz shape mismatch: got {E_ww_kz.shape}, expected ({ny},)")
-        if E_TKE_kz.shape[0] != ny:
-            raise ValueError(f"E_TKE_kz shape mismatch: got {E_TKE_kz.shape}, expected ({ny},)")
+        if Ruu_x.shape[0] != ny:
+            raise ValueError(f"Ruu_x shape mismatch: got {Ruu_x.shape}, expected ({ny},)")
+        if Rvv_x.shape[0] != ny:
+            raise ValueError(f"Rvv_x shape mismatch: got {Rvv_x.shape}, expected ({ny},)")
+        if Rww_x.shape[0] != ny:
+            raise ValueError(f"Rww_x shape mismatch: got {Rww_x.shape}, expected ({ny},)")
+        if Rphi2phi2_x.shape[0] != ny:
+            raise ValueError(f"Rphi2phi2_x shape mismatch: got {Rphi2phi2_x.shape}, expected ({ny},)")
     
         out_path = Path(args.output_path)
         out_path.mkdir(parents=True, exist_ok=True)
-        out_path = out_path / f"kz_spectra_n{ny}_ts{int(args.time_step)}.npz"
+        out_path = out_path / f"streamwise_two_point_correlation_n{ny}_ts{int(args.time_step)}.npz"
 
         np.savez(
                     out_path,
@@ -135,15 +196,16 @@ def compute_spectra(args):
                     time_step           =   int(args.time_step),
                     t_normalized        =   np.float64(t_normalized),
                     ny                  =   int(ny),
+                    nx                  =   int(nx),
                     y_max               =   np.float64(y_max),
 
                     y                   =   y.astype(np.float64),
+                    rx                  =   rx.astype(np.float64),
 
-                    kz                  =   kz.astype(np.float64),
-                    E_uu_kz             =   E_uu_kz.astype(np.float64),
-                    E_vv_kz             =   E_vv_kz.astype(np.float64),
-                    E_ww_kz             =   E_ww_kz.astype(np.float64),
-                    E_TKE_kz            =   E_TKE_kz.astype(np.float64)
+                    Ruu_x          =   Ruu_x.astype(np.float64),
+                    Rvv_x          =   Rvv_x.astype(np.float64),
+                    Rww_x          =   Rww_x.astype(np.float64),
+                    Rphi2phi2_x    =   Rphi2phi2_x.astype(np.float64)
                     
                 )
         print(f"[rank0] wrote {out_path} (ny={ny}, ts={args.time_step})\n")
@@ -163,7 +225,7 @@ def apply_paper_style(ax):
     ax.tick_params(direction="out", length=4, width=1.0, colors="k")
 
 
-def load_npz_spectra(path: str):
+def load_npz_streamwise_two_point_correlation(path: str):
     d    = np.load(path, allow_pickle=True)
     case = str(d["case"])
 
@@ -172,34 +234,34 @@ def load_npz_spectra(path: str):
     ny                = int(d["ny"])
     y_max             = float(d["y_max"])
 
-    kz       = d["kz"].astype(np.float64)
-    E_uu_kz  = d["E_uu_kz"].astype(np.float64)
-    E_vv_kz  = d["E_vv_kz"].astype(np.float64)
-    E_ww_kz  = d["E_ww_kz"].astype(np.float64)
-    E_TKE_kz = d["E_TKE_kz"].astype(np.float64)
+    rx                 = d["rx"].astype(np.float64)
+    Ruu_x         = d["Ruu_x"].astype(np.float64)
+    Rvv_x         = d["Rvv_x"].astype(np.float64)
+    Rww_x         = d["Rww_x"].astype(np.float64)
+    Rphi2phi2_x   = d["Rphi2phi2_x"].astype(np.float64)
 
-    print("E_uu_kz shape: ", E_uu_kz.shape)
-    print("E_vv_kz shape: ", E_vv_kz.shape)
-    print("E_ww_kz shape: ", E_ww_kz.shape)
-    print("E_TKE_kz shape: ", E_TKE_kz.shape)
+    print("Ruu_x shape: ", Ruu_x.shape)
+    print("Rvv_x shape: ", Rvv_x.shape)
+    print("Rww_x shape: ", Rww_x.shape)
+    print("Rphi2phi2_x shape: ", Rphi2phi2_x.shape)
     print("y shape: ", y.shape)
-    print("kz shape: ", kz.shape)
+    print("rx shape: ", rx.shape)
 
-    if E_uu_kz.ndim == 1 or E_uu_kz.shape[1] != kz.shape[0]:
+    if Ruu_x.ndim == 1 or Ruu_x.shape[1] != rx.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
-    if E_vv_kz.ndim == 1 or E_vv_kz.shape[1] != kz.shape[0]:
+    if Rvv_x.ndim == 1 or Rvv_x.shape[1] != rx.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
-    if E_ww_kz.ndim == 1 or E_ww_kz.shape[1] != kz.shape[0]:
+    if Rww_x.ndim == 1 or Rww_x.shape[1] != rx.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
-    if E_TKE_kz.ndim == 1 or E_TKE_kz.shape[1] != kz.shape[0]:
+    if Rphi2phi2_x.ndim == 1 or Rphi2phi2_x.shape[1] != rx.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
 
-    return case, t_normalized, ny, y, y_max, kz, E_uu_kz, E_vv_kz, E_ww_kz, E_TKE_kz
+    return case, t_normalized, ny, y, y_max, rx, Ruu_x, Rvv_x, Rww_x, Rphi2phi2_x
 
 
-def plot_spectra(args):
-    #Loads only the E_kz along the requested y-locations
-    entries = [load_npz_spectra(f) for f in args.inputs]                                
+def plot_streamwise_two_point_correlation(args):
+    #Loads only the correlation along the requested y-locations
+    entries = [load_npz_streamwise_two_point_correlation(f) for f in args.inputs]                                
     cases   = [entry[0] for entry in entries]
                                                                                 
     #Paper-style plot                                                           
@@ -209,17 +271,15 @@ def plot_spectra(args):
 
     components = get_components(args)
     component_map = {
-        1: ("Euu", "E_uu_kz"),
-        2: ("Evv", "E_vv_kz"),
-        3: ("Eww", "E_ww_kz"),
-        4: ("ETKE", "E_TKE_kz"),
+        1: ("Ruu", "Ruu_x"),
+        2: ("Rvv", "Rvv_x"),
+        3: ("Rww", "Rww_x"),
+        4: ("Rphi2phi2", "Rphi2phi2_x"),
     }
 
     curve_count = 0
-    k_ref_for_slope = None
-    E_ref_for_slope = None
 
-    for idx, (case, t_normalized, ny, y, y_max, kz, E_uu_kz, E_vv_kz, E_ww_kz, E_TKE_kz) in enumerate(entries):
+    for idx, (case, t_normalized, ny, y, y_max, rx, Ruu_x, Rvv_x, Rww_x, Rphi2phi2_x) in enumerate(entries):
         case_lab = (
                 args.labels[idx]
                 if args.labels and len(args.labels) == len(entries)
@@ -229,11 +289,11 @@ def plot_spectra(args):
         y_delta_multiples = get_y_delta_multiples(args)
         y_indices, y_selected = get_y_indices(y, y_max, y_delta_multiples)
 
-        spectra_map = {
-            "E_uu_kz"  : E_uu_kz,
-            "E_vv_kz"  : E_vv_kz,
-            "E_ww_kz"  : E_ww_kz,
-            "E_TKE_kz" : E_TKE_kz,
+        correlation_map = {
+            "Ruu_x"       : Ruu_x,
+            "Rvv_x"       : Rvv_x,
+            "Rww_x"       : Rww_x,
+            "Rphi2phi2_x" : Rphi2phi2_x,
         }
 
         for m_idx, m in zip(y_indices, y_delta_multiples):
@@ -242,41 +302,17 @@ def plot_spectra(args):
                     raise ValueError("Component must be one of 1, 2, 3, 4")
 
                 component_label, component_key = component_map[component]
-                E_kz = spectra_map[component_key][m_idx, :]
+                R_x = correlation_map[component_key][m_idx, :]
 
                 lab = f"{case_lab}, {component_label}, y-yc={m:g}$\\delta_{{\\theta,0}}$"
 
-                k_plot = kz[1:]
-                E_plot = E_kz[1:]
-                
-                E_floor = 1e-6
-                valid = E_plot >= E_floor
-                
-                ax.loglog(k_plot[valid], E_plot[valid], color="r", 
-                        linestyle=dash_cycle[curve_count % len(dash_cycle)], linewidth=1.2, label=lab)
-
-                if k_ref_for_slope is None:
-                    k_ref_for_slope = kz[1:]
-                    E_ref_for_slope = E_kz[1:]
-
+                half_idx = (len(rx) // 2) - 1
+                ax.plot(rx[:half_idx], R_x[:half_idx], color="r", linestyle=dash_cycle[curve_count % len(dash_cycle)], label=lab)
                 curve_count = curve_count + 1
 
-    # --- Two reference slope ---
-    if k_ref_for_slope is not None and len(k_ref_for_slope) > 6:
-        k_ref = k_ref_for_slope
-        k0 = k_ref[5]
-        E0 = E_ref_for_slope[5]
-        c = 0.75
-        
-        E_ref_1 = E0 * (k_ref / k0)**(-5.0/3.0)
-        #E_ref_2 = E0 * (k_ref / k0)**(-10.0/3.0) * np.exp(c)
-        
-        ax.loglog(k_ref, E_ref_1, 'k--', linewidth=1.2, label=r"$k^{-5/3}$")
-        #ax.loglog(k_ref, E_ref_2, 'k-.', linewidth=1.2, label=r"$k^{-10/3}$")
-
     #Labels
-    ax.set_ylabel("$E(k)_{z}$")
-    ax.set_xlabel("$k_{z}$")
+    ax.set_ylabel("$R(r_x) / R(0)$")
+    ax.set_xlabel("$r_x$")
     #To have path of run being used
     p = Path(cases[-1])
     short = Path(*p.parts[-2:])
@@ -289,7 +325,7 @@ def plot_spectra(args):
 
     apply_paper_style(ax)
     ax.legend(loc="best", frameon=False)
-    ax.legend(fontsize=6)
+    ax.legend()
     fig.tight_layout(pad=1.0)
     fig.savefig(args.out, dpi=300)
     plt.close(fig)

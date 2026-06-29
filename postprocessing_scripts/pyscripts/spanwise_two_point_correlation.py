@@ -7,7 +7,7 @@ import re, pathlib
 import os
 
 from pyscripts.test_TKE_vGPT_v4 import TKE_Budget
-
+from pyscripts.plot_style import paper_style
 
 def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     """ To grep all the required data from the CTR file
@@ -69,7 +69,8 @@ def get_y_indices(y, y_max, y_delta_multiples):
 
     for m in y_delta_multiples:
         y_target = yc + m * delta_theta0
-        idx = int(np.argmin(np.abs(y - y_target)))
+        #idx = int(np.argmin(np.abs(y - y_target)))
+        idx = 512
         y_indices.append(idx)
         y_selected.append(y[idx])
 
@@ -77,8 +78,8 @@ def get_y_indices(y, y_max, y_delta_multiples):
 
 
 def get_components(args):
-    if hasattr(args, "spectra_components") and args.spectra_components is not None:
-        components = list(args.spectra_components)
+    if hasattr(args, "twopoint_correlation_components") and args.twopoint_correlation_components is not None:
+        components = list(args.twopoint_correlation_components)
     else:
         components = [1, 2, 3, 4]
 
@@ -86,25 +87,26 @@ def get_components(args):
 
 
 #Computing
-def compute_spectra(args):
+def compute_spanwise_two_point_correlation(args):
     T = TKE_Budget(args.case)
     T._time_step      = args.time_step
     T._stackdirection = args.stackdirection
     
     T.common_terms()
-    T.compute_spectra_along_kz()
+    T.compute_spanwise_two_point_correlation()
 
     if T._case.rank == 0:
         #Grepping the required data 
-        E_uu_kz  = T._E_uu_kz_global
-        E_vv_kz  = T._E_vv_kz_global
-        E_ww_kz  = T._E_ww_kz_global
-        E_TKE_kz = T._E_TKE_kz_global
-        kz       = T._kz_positive_global
+        Ruu_z       = T._Ruu_z_global
+        Rvv_z       = T._Rvv_z_global
+        Rww_z       = T._Rww_z_global
+        Rphi2phi2_z = T._Rphi2phi2_z_global
 
         ny    = T._ny_g
+        nz    = T._nz_g
         y_max = T._ymax
         y     = (np.arange(ny) + 0.5) * (y_max / ny)  
+        rz    = np.arange(nz) * T._dz
 
         #Computing normalized time
         U_l             = 0.
@@ -115,18 +117,18 @@ def compute_spectra(args):
         ts              = args.time_step
         t_normalized    = (ts * dt * U_g)/delta_ts
 
-        if E_uu_kz.shape[0] != ny:
-            raise ValueError(f"E_uu_kz shape mismatch: got {E_uu_kz.shape}, expected ({ny},)")
-        if E_vv_kz.shape[0] != ny:
-            raise ValueError(f"E_vv_kz shape mismatch: got {E_vv_kz.shape}, expected ({ny},)")
-        if E_ww_kz.shape[0] != ny:
-            raise ValueError(f"E_ww_kz shape mismatch: got {E_ww_kz.shape}, expected ({ny},)")
-        if E_TKE_kz.shape[0] != ny:
-            raise ValueError(f"E_TKE_kz shape mismatch: got {E_TKE_kz.shape}, expected ({ny},)")
+        if Ruu_z.shape[0] != ny:
+            raise ValueError(f"Ruu_z shape mismatch: got {Ruu_z.shape}, expected ({ny},)")
+        if Rvv_z.shape[0] != ny:
+            raise ValueError(f"Rvv_z shape mismatch: got {Rvv_z.shape}, expected ({ny},)")
+        if Rww_z.shape[0] != ny:
+            raise ValueError(f"Rww_z shape mismatch: got {Rww_z.shape}, expected ({ny},)")
+        if Rphi2phi2_z.shape[0] != ny:
+            raise ValueError(f"Rphi2phi2_z shape mismatch: got {Rphi2phi2_z.shape}, expected ({ny},)")
     
         out_path = Path(args.output_path)
         out_path.mkdir(parents=True, exist_ok=True)
-        out_path = out_path / f"kz_spectra_n{ny}_ts{int(args.time_step)}.npz"
+        out_path = out_path / f"spanwise_two_point_correlation_n{ny}_ts{int(args.time_step)}.npz"
 
         np.savez(
                     out_path,
@@ -135,15 +137,16 @@ def compute_spectra(args):
                     time_step           =   int(args.time_step),
                     t_normalized        =   np.float64(t_normalized),
                     ny                  =   int(ny),
+                    nz                  =   int(nz),
                     y_max               =   np.float64(y_max),
 
                     y                   =   y.astype(np.float64),
+                    rz                  =   rz.astype(np.float64),
 
-                    kz                  =   kz.astype(np.float64),
-                    E_uu_kz             =   E_uu_kz.astype(np.float64),
-                    E_vv_kz             =   E_vv_kz.astype(np.float64),
-                    E_ww_kz             =   E_ww_kz.astype(np.float64),
-                    E_TKE_kz            =   E_TKE_kz.astype(np.float64)
+                    Ruu_z               =   Ruu_z.astype(np.float64),
+                    Rvv_z               =   Rvv_z.astype(np.float64),
+                    Rww_z               =   Rww_z.astype(np.float64),
+                    Rphi2phi2_z         =   Rphi2phi2_z.astype(np.float64)
                     
                 )
         print(f"[rank0] wrote {out_path} (ny={ny}, ts={args.time_step})\n")
@@ -163,7 +166,10 @@ def apply_paper_style(ax):
     ax.tick_params(direction="out", length=4, width=1.0, colors="k")
 
 
-def load_npz_spectra(path: str):
+def load_npz_spanwise_two_point_correlation(path: str):
+    #For normalization
+    delta_ts = (2 * np.pi) / 100
+
     d    = np.load(path, allow_pickle=True)
     case = str(d["case"])
 
@@ -172,68 +178,70 @@ def load_npz_spectra(path: str):
     ny                = int(d["ny"])
     y_max             = float(d["y_max"])
 
-    kz       = d["kz"].astype(np.float64)
-    E_uu_kz  = d["E_uu_kz"].astype(np.float64)
-    E_vv_kz  = d["E_vv_kz"].astype(np.float64)
-    E_ww_kz  = d["E_ww_kz"].astype(np.float64)
-    E_TKE_kz = d["E_TKE_kz"].astype(np.float64)
+    rz                =     d["rz"].astype(np.float64)
+    rz_normalized     =     rz / delta_ts
+    Ruu_z             =     d["Ruu_z"].astype(np.float64)
+    Rvv_z             =     d["Rvv_z"].astype(np.float64)
+    Rww_z             =     d["Rww_z"].astype(np.float64)
+    Rphi2phi2_z       =     d["Rphi2phi2_z"].astype(np.float64)
 
-    print("E_uu_kz shape: ", E_uu_kz.shape)
-    print("E_vv_kz shape: ", E_vv_kz.shape)
-    print("E_ww_kz shape: ", E_ww_kz.shape)
-    print("E_TKE_kz shape: ", E_TKE_kz.shape)
+    print("Ruu_z shape: ", Ruu_z.shape)
+    print("Rvv_z shape: ", Rvv_z.shape)
+    print("Rww_z shape: ", Rww_z.shape)
+    print("Rphi2phi2_z shape: ", Rphi2phi2_z.shape)
     print("y shape: ", y.shape)
-    print("kz shape: ", kz.shape)
+    print("rz shape: ", rz.shape)
 
-    if E_uu_kz.ndim == 1 or E_uu_kz.shape[1] != kz.shape[0]:
+    if Ruu_z.ndim == 1 or Ruu_z.shape[1] != rz.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
-    if E_vv_kz.ndim == 1 or E_vv_kz.shape[1] != kz.shape[0]:
+    if Rvv_z.ndim == 1 or Rvv_z.shape[1] != rz.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
-    if E_ww_kz.ndim == 1 or E_ww_kz.shape[1] != kz.shape[0]:
+    if Rww_z.ndim == 1 or Rww_z.shape[1] != rz.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
-    if E_TKE_kz.ndim == 1 or E_TKE_kz.shape[1] != kz.shape[0]:
+    if Rphi2phi2_z.ndim == 1 or Rphi2phi2_z.shape[1] != rz.shape[0]:
         raise ValueError(f"Size error, please check the generated dataset!")
 
-    return case, t_normalized, ny, y, y_max, kz, E_uu_kz, E_vv_kz, E_ww_kz, E_TKE_kz
+    return case, t_normalized, ny, y, y_max, rz_normalized, Ruu_z, Rvv_z, Rww_z, Rphi2phi2_z
 
 
-def plot_spectra(args):
-    #Loads only the E_kz along the requested y-locations
-    entries = [load_npz_spectra(f) for f in args.inputs]                                
+def plot_spanwise_two_point_correlation(args):
+    #Loads only the correlation along the requested y-locations
+    entries = [load_npz_spanwise_two_point_correlation(f) for f in args.inputs]                                
     cases   = [entry[0] for entry in entries]
                                                                                 
     #Paper-style plot                                                           
+    paper_style()
     fig = plt.figure(figsize=(args.figsize[0], args.figsize[1]), dpi=150)       
     ax = fig.add_subplot(111)                                                   
     dash_cycle = ["-", ":", "--", "-.", (0, (5, 2)), (0, (3, 1, 1, 1))]
 
     components = get_components(args)
     component_map = {
-        1: ("Euu", "E_uu_kz"),
-        2: ("Evv", "E_vv_kz"),
-        3: ("Eww", "E_ww_kz"),
-        4: ("ETKE", "E_TKE_kz"),
+        1: ("R_{uu}", "Ruu_z"),
+        2: ("R_{vv}", "Rvv_z"),
+        3: ("R_{ww}", "Rww_z"),
+        4: ("R_{\phi_2\phi_2}", "Rphi2phi2_z"),
     }
 
     curve_count = 0
-    k_ref_for_slope = None
-    E_ref_for_slope = None
 
-    for idx, (case, t_normalized, ny, y, y_max, kz, E_uu_kz, E_vv_kz, E_ww_kz, E_TKE_kz) in enumerate(entries):
+    for idx, (case, t_normalized, ny, y, y_max, rz_normalized, Ruu_z, Rvv_z, Rww_z, Rphi2phi2_z) in enumerate(entries):
         case_lab = (
                 args.labels[idx]
                 if args.labels and len(args.labels) == len(entries)
-                else f"{ny}$^3$, t*={t_normalized:.2f}"
+                #else f"{ny}$^3$, t*={t_normalized:.2f}"
+                #else f"t*={t_normalized:.2f}"
+                else f"{t_normalized:.2f}"
               )
 
         y_delta_multiples = get_y_delta_multiples(args)
         y_indices, y_selected = get_y_indices(y, y_max, y_delta_multiples)
 
-        spectra_map = {
-            "E_uu_kz"  : E_uu_kz,
-            "E_vv_kz"  : E_vv_kz,
-            "E_ww_kz"  : E_ww_kz,
-            "E_TKE_kz" : E_TKE_kz,
+        correlation_map = {
+            "Ruu_z"       : Ruu_z,
+            "Rvv_z"       : Rvv_z,
+            "Rww_z"       : Rww_z,
+            "Rphi2phi2_z" : Rphi2phi2_z,
         }
 
         for m_idx, m in zip(y_indices, y_delta_multiples):
@@ -242,41 +250,22 @@ def plot_spectra(args):
                     raise ValueError("Component must be one of 1, 2, 3, 4")
 
                 component_label, component_key = component_map[component]
-                E_kz = spectra_map[component_key][m_idx, :]
+                R_z = correlation_map[component_key][m_idx, :]
 
-                lab = f"{case_lab}, {component_label}, y-yc={m:g}$\\delta_{{\\theta,0}}$"
+                #lab = f"{case_lab}, {component_label}, y-yc={m:g}$\\delta_{{\\theta,0}}$"
+                lab = f"$t^* = {case_lab}$, ${component_label}$"
 
-                k_plot = kz[1:]
-                E_plot = E_kz[1:]
-                
-                E_floor = 1e-6
-                valid = E_plot >= E_floor
-                
-                ax.loglog(k_plot[valid], E_plot[valid], color="r", 
-                        linestyle=dash_cycle[curve_count % len(dash_cycle)], linewidth=1.2, label=lab)
-
-                if k_ref_for_slope is None:
-                    k_ref_for_slope = kz[1:]
-                    E_ref_for_slope = E_kz[1:]
+                half_idx = len(rz_normalized) // 2 + 1
+                ax.plot(rz_normalized[:half_idx], R_z[:half_idx], color="r", 
+                        linestyle=dash_cycle[curve_count % len(dash_cycle)], label=lab)
 
                 curve_count = curve_count + 1
 
-    # --- Two reference slope ---
-    if k_ref_for_slope is not None and len(k_ref_for_slope) > 6:
-        k_ref = k_ref_for_slope
-        k0 = k_ref[5]
-        E0 = E_ref_for_slope[5]
-        c = 0.75
-        
-        E_ref_1 = E0 * (k_ref / k0)**(-5.0/3.0)
-        #E_ref_2 = E0 * (k_ref / k0)**(-10.0/3.0) * np.exp(c)
-        
-        ax.loglog(k_ref, E_ref_1, 'k--', linewidth=1.2, label=r"$k^{-5/3}$")
-        #ax.loglog(k_ref, E_ref_2, 'k-.', linewidth=1.2, label=r"$k^{-10/3}$")
-
+    #Horizontal line at y = 0
+    plt.axhline(y=0, linestyle="--", color="k", linewidth=0.5, alpha=0.5)
     #Labels
-    ax.set_ylabel("$E(k)_{z}$")
-    ax.set_xlabel("$k_{z}$")
+    ax.set_ylabel("$R(r_z, z) / R(0, z)$")
+    ax.set_xlabel("$r_z / \delta_{0}$")
     #To have path of run being used
     p = Path(cases[-1])
     short = Path(*p.parts[-2:])
@@ -287,9 +276,9 @@ def plot_spectra(args):
         fontsize=5
     )
 
-    apply_paper_style(ax)
-    ax.legend(loc="best", frameon=False)
-    ax.legend(fontsize=6)
+    #apply_paper_style(ax)
+    ax.legend()
+    ax.legend()
     fig.tight_layout(pad=1.0)
     fig.savefig(args.out, dpi=300)
     plt.close(fig)

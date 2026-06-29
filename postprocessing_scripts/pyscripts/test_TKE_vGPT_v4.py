@@ -831,83 +831,83 @@ class TKE_Budget:
        """
        """
 
-        nz = self._nz_g
-        ny_local = self._u_double_prime.shape[1]
+       nz = self._nz_g
+       ny_local = self._u_double_prime.shape[1]
 
-        #Constructing the wavenumbers for my concerned domain
-        kz          = 2.0 * np.pi * np.fft.fftfreq(nz, d=self._dz)
-        kz_positive = 2.0 * np.pi * np.fft.rfftfreq(nz, d=self._dz)
+       #Constructing the wavenumbers for my concerned domain
+       kz          = 2.0 * np.pi * np.fft.fftfreq(nz, d=self._dz)
+       kz_positive = 2.0 * np.pi * np.fft.rfftfreq(nz, d=self._dz)
 
-        nkz = kz.shape[0]
-        nkz_positive = kz_positive.shape[0]
+       nkz = kz.shape[0]
+       nkz_positive = kz_positive.shape[0]
 
-        #I only store the averaged out 1D spectra each for z and z for each local y-plane.
-        #Not storing the whole thing due to memory 
-        #E_kz_local = np.zeros((ny_local, nkz), dtype=np.float64)
-        E_uu_kz_local  = np.zeros((ny_local, nkz_positive), dtype=np.float64)
-        E_vv_kz_local  = np.zeros((ny_local, nkz_positive), dtype=np.float64)
-        E_ww_kz_local  = np.zeros((ny_local, nkz_positive), dtype=np.float64)
-        E_TKE_kz_local = np.zeros((ny_local, nkz_positive), dtype=np.float64)
+       #I only store the averaged out 1D spectra each for z and z for each local y-plane.
+       #Not storing the whole thing due to memory 
+       #E_kz_local = np.zeros((ny_local, nkz), dtype=np.float64)
+       E_uu_kz_local  = np.zeros((ny_local, nkz_positive), dtype=np.float64)
+       E_vv_kz_local  = np.zeros((ny_local, nkz_positive), dtype=np.float64)
+       E_ww_kz_local  = np.zeros((ny_local, nkz_positive), dtype=np.float64)
+       E_TKE_kz_local = np.zeros((ny_local, nkz_positive), dtype=np.float64)
 
-        #No normalization or one-sided doubling is done while computing the spectra
-        #One cannot recover the total energy from the integral of the below TKE spectra
-        #Neither are the amplituted physically scaled
+       #No normalization or one-sided doubling is done while computing the spectra
+       #One cannot recover the total energy from the integral of the below TKE spectra
+       #Neither are the amplituted physically scaled
 
-        for j in range(ny_local):
-            #Eztracting one z-z plane of the velocity fluctuations.
-            #The fluctuations are already available from common_terms().
-            u_plane = self._u_double_prime[:, j, :]
-            v_plane = self._v_double_prime[:, j, :]
-            w_plane = self._w_double_prime[:, j, :]
+       for j in range(ny_local):
+           #Eztracting one z-z plane of the velocity fluctuations.
+           #The fluctuations are already available from common_terms().
+           u_plane = self._u_double_prime[:, j, :]
+           v_plane = self._v_double_prime[:, j, :]
+           w_plane = self._w_double_prime[:, j, :]
 
-            #Performing FFT along z 
-            uhat_z = np.fft.rfft(u_plane, axis = 1)
-            vhat_z = np.fft.rfft(v_plane, axis = 1)
-            what_z = np.fft.rfft(w_plane, axis = 1)
+           #Performing FFT along z 
+           uhat_z = np.fft.rfft(u_plane, axis = 1)
+           vhat_z = np.fft.rfft(v_plane, axis = 1)
+           what_z = np.fft.rfft(w_plane, axis = 1)
 
-            #To construct the covariance I have to;
-            #Multiply the pairs -->  uhat_z[m] * u_hat_z[-m]
-            #Take avg along z   --> <uhat_z[m] * u_hat_z[-m]>
-            #I think averaging along z would be axis = 0
-            u_covariance = np.mean(uhat_z * np.conj(uhat_z), axis=0) 
-            v_covariance = np.mean(vhat_z * np.conj(vhat_z), axis=0) 
-            w_covariance = np.mean(what_z * np.conj(what_z), axis=0) 
+           #To construct the covariance I have to;
+           #Multiply the pairs -->  uhat_z[m] * u_hat_z[-m]
+           #Take avg along z   --> <uhat_z[m] * u_hat_z[-m]>
+           #I think averaging along z would be axis = 0
+           u_covariance = np.mean(uhat_z * np.conj(uhat_z), axis=0) 
+           v_covariance = np.mean(vhat_z * np.conj(vhat_z), axis=0) 
+           w_covariance = np.mean(what_z * np.conj(what_z), axis=0) 
 
-            #Constructing E_kz_local
-            E_uu_kz_local[j, :] = u_covariance 
-            E_vv_kz_local[j, :] = v_covariance 
-            E_ww_kz_local[j, :] = w_covariance
-            E_TKE_kz_local[j, :] = 0.5 * (u_covariance + v_covariance + w_covariance)
+           #Constructing E_kz_local
+           E_uu_kz_local[j, :] = u_covariance 
+           E_vv_kz_local[j, :] = v_covariance 
+           E_ww_kz_local[j, :] = w_covariance
+           E_TKE_kz_local[j, :] = 0.5 * (u_covariance + v_covariance + w_covariance)
 
-            #Deleting temporary arrays ezplicitly. This is not strictly required for
-            #correctness, but it helps keep the temporary lifetime short in a large job.
-            del uhat_z
-            del vhat_z
-            del what_z
+           #Deleting temporary arrays ezplicitly. This is not strictly required for
+           #correctness, but it helps keep the temporary lifetime short in a large job.
+           del uhat_z
+           del vhat_z
+           del what_z
 
-            del u_covariance        
-            del v_covariance
-            del w_covariance
+           del u_covariance        
+           del v_covariance
+           del w_covariance
 
-        self._E_uu_kz_parts  = self._case.comm.gather(E_uu_kz_local, root=0)
-        self._E_vv_kz_parts  = self._case.comm.gather(E_vv_kz_local, root=0)
-        self._E_ww_kz_parts  = self._case.comm.gather(E_ww_kz_local, root=0)
-        self._E_TKE_kz_parts = self._case.comm.gather(E_TKE_kz_local, root=0)
+       self._E_uu_kz_parts  = self._case.comm.gather(E_uu_kz_local, root=0)
+       self._E_vv_kz_parts  = self._case.comm.gather(E_vv_kz_local, root=0)
+       self._E_ww_kz_parts  = self._case.comm.gather(E_ww_kz_local, root=0)
+       self._E_TKE_kz_parts = self._case.comm.gather(E_TKE_kz_local, root=0)
 
-        if(self._case.rank == 0):
-            self._E_uu_kz_global  = np.concatenate(self._E_uu_kz_parts, axis=0)
-            self._E_vv_kz_global  = np.concatenate(self._E_vv_kz_parts, axis=0)
-            self._E_ww_kz_global  = np.concatenate(self._E_ww_kz_parts, axis=0)
-            self._E_TKE_kz_global = np.concatenate(self._E_TKE_kz_parts, axis=0)
+       if(self._case.rank == 0):
+           self._E_uu_kz_global  = np.concatenate(self._E_uu_kz_parts, axis=0)
+           self._E_vv_kz_global  = np.concatenate(self._E_vv_kz_parts, axis=0)
+           self._E_ww_kz_global  = np.concatenate(self._E_ww_kz_parts, axis=0)
+           self._E_TKE_kz_global = np.concatenate(self._E_TKE_kz_parts, axis=0)
 
-            self._kz_positive_global = kz_positive
+           self._kz_positive_global = kz_positive
 
-        else:
-            self._E_uu_kz_global  = None
-            self._E_vv_kz_global  = None
-            self._E_ww_kz_global  = None
-            self._E_TKE_kz_global = None
-            self._kz_positive_global = None
+       else:
+           self._E_uu_kz_global  = None
+           self._E_vv_kz_global  = None
+           self._E_ww_kz_global  = None
+           self._E_TKE_kz_global = None
+           self._kz_positive_global = None
 
 
     def reynolds_stresses(self):
@@ -986,26 +986,53 @@ class TKE_Budget:
 
         #Construct the arrays for storing the spanwise two-point correlations for
         #u, v, w and phi_l (Which is phi_2)
-        x0 = 0
+        eps = 1e-8
         Ruu_x_local       = np.zeros((ny_local, nx), dtype=np.float64) 
         Rvv_x_local       = np.zeros((ny_local, nx), dtype=np.float64) 
         Rww_x_local       = np.zeros((ny_local, nx), dtype=np.float64) 
         Rphi2phi2_x_local = np.zeros((ny_local, nx), dtype=np.float64) 
+
+        #This is to just store the correlation at the midplane
+        target_global_j = self._ny_g // 2
+        ny_local = self._u_double_prime.shape[1]
+        global_j_start = self._case.rank * ny_local
+        global_j_end   = global_j_start + ny_local
+        if global_j_start <= target_global_j < global_j_end:
+            target_local_j = target_global_j - global_j_start
+        else:
+            target_local_j = None
     
         #Run a for loop to comb the correlation across all ys, avg it along z
         for j in range(ny_local):
+            if(target_local_j is None):
+                continue
+            if(j != target_local_j):
+                continue
+
             #This is getting me the x-z plane fluctuations which are already computed
             u_plane    = self._u_double_prime[:, j, :]
             v_plane    = self._v_double_prime[:, j, :]
             w_plane    = self._w_double_prime[:, j, :] 
             phi2_plane = -self._phi1_prime[:, j, :]
 
-            #I then construct the correlation with a for loop again
+            denominator_to_normalize_for_uu       = np.mean(u_plane * u_plane) + eps
+            denominator_to_normalize_for_vv       = np.mean(v_plane * v_plane) + eps
+            denominator_to_normalize_for_ww       = np.mean(w_plane * w_plane) + eps
+            denominator_to_normalize_for_phi2phi2 = np.mean(phi2_plane * phi2_plane) + eps
+
+            #Python has this neat np.roll, which lets me avoid the for loops over
+            #x and z. I can instead just loop over seperation distance r
             for r in range(nx):
-                Ruu_x_local[j, r]       = np.mean(u_plane[x0, :]    * u_plane[x0 + r, :])
-                Rvv_x_local[j, r]       = np.mean(v_plane[x0, :]    * v_plane[x0 + r, :])
-                Rww_x_local[j, r]       = np.mean(w_plane[x0, :]    * w_plane[x0 + r, :])
-                Rphi2phi2_x_local[j, r] = np.mean(phi2_plane[x0, :] * phi2_plane[x0 + r, :])
+                
+                #I need to construct the correlation for each seperation distance
+                #r, then avg along x and z. Avg along z is basically avg along different
+                #flow realizations, different exps if you will since it is periodic in z. 
+                #Avging along x lets me make the correlation independent of starting point x0.
+                Ruu_x_local[j, r]       = np.mean(u_plane * np.roll(u_plane, r, axis=0))         /     denominator_to_normalize_for_uu      
+                Rvv_x_local[j, r]       = np.mean(v_plane * np.roll(v_plane, r, axis=0))         /     denominator_to_normalize_for_vv      
+                Rww_x_local[j, r]       = np.mean(w_plane * np.roll(w_plane, r, axis=0))         /     denominator_to_normalize_for_ww      
+                Rphi2phi2_x_local[j, r] = np.mean(phi2_plane * np.roll(phi2_plane, r, axis=0))   /     denominator_to_normalize_for_phi2phi2
+
 
         #Now that I have gathered the two point correlation for all y values in each MPI rank
         #I have to put them together, which is what I do in the following;
@@ -1035,26 +1062,52 @@ class TKE_Budget:
 
         #Construct the arrays for storing the spanwise two-point correlations for
         #u, v, w and phi_l (Which is phi_2)
-        z0 = 0
+        eps = 1e-8
         Ruu_z_local       = np.zeros((ny_local, nz), dtype=np.float64) 
         Rvv_z_local       = np.zeros((ny_local, nz), dtype=np.float64) 
         Rww_z_local       = np.zeros((ny_local, nz), dtype=np.float64) 
         Rphi2phi2_z_local = np.zeros((ny_local, nz), dtype=np.float64) 
-    
+
+        #This is to just store the correlation at the midplane
+        target_global_j = self._ny_g // 2
+        ny_local = self._u_double_prime.shape[1]
+        global_j_start = self._case.rank * ny_local
+        global_j_end   = global_j_start + ny_local
+        if global_j_start <= target_global_j < global_j_end:
+            target_local_j = target_global_j - global_j_start
+        else:
+            target_local_j = None
+
         #Run a for loop to comb the correlation across all ys, avg it along z
         for j in range(ny_local):
+            if(target_local_j is None):
+                continue
+            if(j != target_local_j):
+                continue
             #This is getting me the x-z plane fluctuations which are already computed
             u_plane    = self._u_double_prime[:, j, :]
             v_plane    = self._v_double_prime[:, j, :]
             w_plane    = self._w_double_prime[:, j, :] 
             phi2_plane = -self._phi1_prime[:, j, :]
 
-            #I then construct the correlation with a for loop again
+            denominator_to_normalize_for_uu       = np.mean(u_plane * u_plane) + eps
+            denominator_to_normalize_for_vv       = np.mean(v_plane * v_plane) + eps
+            denominator_to_normalize_for_ww       = np.mean(w_plane * w_plane) + eps
+            denominator_to_normalize_for_phi2phi2 = np.mean(phi2_plane * phi2_plane) + eps
+
+            #Python has this neat np.roll, which lets me avoid the for loops over
+            #x and z. I can instead just loop over seperation distance r
             for r in range(nz):
-                Ruu_z_local[j, r]       = np.mean(u_plane[:, z0]    * u_plane[:, z0 + r])
-                Rvv_z_local[j, r]       = np.mean(v_plane[:, z0]    * v_plane[:, z0 + r])
-                Rww_z_local[j, r]       = np.mean(w_plane[:, z0]    * w_plane[:, z0 + r])
-                Rphi2phi2_z_local[j, r] = np.mean(phi2_plane[:, z0] * phi2_plane[:, r + z0])
+                
+                #I need to construct the correlation for each seperation distance
+                #r, then avg along x and z. Avg along z is basically avg along different
+                #flow realizations, different exps if you will since it is periodic in z. 
+                #Avging along x lets me make the correlation independent of starting point x0.
+                Ruu_z_local[j, r]       = np.mean(u_plane * np.roll(u_plane, r, axis=1))         /     denominator_to_normalize_for_uu      
+                Rvv_z_local[j, r]       = np.mean(v_plane * np.roll(v_plane, r, axis=1))         /     denominator_to_normalize_for_vv      
+                Rww_z_local[j, r]       = np.mean(w_plane * np.roll(w_plane, r, axis=1))         /     denominator_to_normalize_for_ww      
+                Rphi2phi2_z_local[j, r] = np.mean(phi2_plane * np.roll(phi2_plane, r, axis=1))   /     denominator_to_normalize_for_phi2phi2
+
 
         #Now that I have gathered the two point correlation for all y values in each MPI rank
         #I have to put them together, which is what I do in the following;

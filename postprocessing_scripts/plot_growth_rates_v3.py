@@ -51,20 +51,21 @@ def use_paper_style():
         "ytick.right"           : True,
 
         #Linewidth
-        "axes.linewidth"    : 0.5,
         "lines.linewidth"   : 1.0,
-        "grid.linewidth"    : 0.5,
 
         #Axis
+        "axes.linewidth"    : 1.2,
         "axes.labelsize"    : 10,     
         "axes.titlesize"    : 10,     
-
-        #Grid
         "axes.grid"         : True,
         "axes.axisbelow"    : True,
+        "axes.edgecolor"    : "k",
+
+        #Grid
+        "grid.linewidth"    : 0.5,
         "grid.linestyle"    : "--",
         "grid.color"        : "0.45",
-        "grid.alpha"        : 0.75,
+        "grid.alpha"        : 0.5,
 
         #Legend
         "legend.frameon"    : True,
@@ -88,7 +89,7 @@ def get_grid_name(filename):
     basename = os.path.basename(filename)
     basename = os.path.splitext(basename)[0]
 
-    return basename.split("_")[-3]
+    return basename.split("_")[-3:]
 
 
 def load_csv_thickness(filename):

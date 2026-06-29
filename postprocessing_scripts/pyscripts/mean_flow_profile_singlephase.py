@@ -36,8 +36,8 @@ def mean_flow_profile(args):
     if T._case.rank == 0:
         print("--Computing mean flow profile!")
 
-        U_l              = 0.
-        U_g              = 3.1830988618379066
+        U_l              = -0.5 * (3.1830988618379066)
+        U_g              =  0.5 * (3.1830988618379066)
         print("-- Using hardcoded U_g and U_l values!")
         ny               = T._ny_g
         u_avg            = T._u_avg_global
@@ -48,12 +48,12 @@ def mean_flow_profile(args):
         dt              = grep_ctr('dt', ctr_file)
         delta_ts        = (2. * np.pi) / 100.
         ts              = args.time_step
-        t_normalized    = (ts * dt * U_g)/delta_ts
+        #It is supposed to be \delta_U = Ug - Ul = 2 * Ug
+        t_normalized    = (ts * dt * 2 * U_g)/delta_ts
 
         #Generating y_grid
         dy = 2 * np.pi / ny
         print("--Using hardcoded domain size")
-        #y_grid = np.arange(0, 2 * np.pi, step)
         y_grid = (np.arange(ny) + 0.5) * (dy)
 
         #Finding U(x, y_0.1 & 0.9, z) 
@@ -72,12 +72,15 @@ def mean_flow_profile(args):
         xi    = (y_grid - y_bar) / delta
 
         #Debug
-        print("-- xi shape: ",       xi.shape)
-        print("-- delta : ",         delta)
-        print("-- y01 : ",           y_01)
-        print("-- y09 : ",           y_09)
-        print("-- y_bar : ",         y_bar)
-        print("-- y_grid shape: ",   y_grid.shape)
+        #print("-- u_avg min/max       :", u_avg.min(), u_avg.max())
+        #print("-- U_l, U_g            :", U_l, U_g)
+        print("-- U_01, U_09          :", U_01, U_09)
+        print("-- idx size / ny       :", idx[0].size, "/", ny)
+        print("-- y_01, y_09          :", y_01, y_09)
+        print("-- delta, y_bar        :", delta, y_bar)
+        #print("-- pi                  :", np.pi)
+        #print("-- y_bar               :", y_bar)
+        #print("-- y_bar - pi          :", y_bar - np.pi)
     
         #if u_avg_normalized.ndim != 1 or u_avg_normalized.shape[0] != ny:
         #    raise ValueError(f"u_avg_normalized shape mismatch: got {u_avg_normalized.shape}, expected ({ny},)")
@@ -98,7 +101,7 @@ def mean_flow_profile(args):
 
                     y                =   xi.astype(np.float64),
                     #u_avg_normalized =   u_avg_normalized.astype(np.float64),
-                    u_avg =   u_avg.astype(np.float64),
+                    u_avg            =   u_avg.astype(np.float64),
                 )
         print(f"[rank0] wrote {out_path} (ny={ny}, ts={args.time_step})")
 
@@ -118,8 +121,10 @@ def apply_paper_style(ax):
     ax.tick_params(direction="out", length=4, width=1.0, colors="k")
 
 def load_npz_mean_flow_profile(path: str):
-    U_l              = 0.
-    U_g              = 3.1830988618379066
+    #This is required for normalization
+    U_l              = -0.5 * (3.1830988618379066)
+    U_g              =  0.5 * (3.1830988618379066)
+
     d               = np.load(path, allow_pickle=True)
     case            = str(d["case"])
 
@@ -129,8 +134,7 @@ def load_npz_mean_flow_profile(path: str):
 
     xi               = d["y"].astype(np.float64)
     u_avg            = d["u_avg"].astype(np.float64)
-    #This normalization is from pope's chapter 5
-    u_avg_normalized = u_avg / U_g - 0.5
+    u_avg_normalized = u_avg / (2 * U_g)
 
     print("xi shape: ", xi.shape)
     print("u_avg_normalized shape: ", u_avg_normalized.shape)
