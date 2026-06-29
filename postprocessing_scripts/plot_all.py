@@ -45,9 +45,14 @@ if __name__ == "__main__":
         "--TKE_Budget_components",
         nargs="+",
         type=int,
-        default=1,
         choices=[1, 2, 3, 4, 5, 6, 7],
         help="asdf"
+    )
+    parser.add_argument(
+        "--mean-flow-inputs",
+        nargs="+",
+        required=False,
+        help="Mean-flow profile .npz files containing xi, matched one-to-one with --inputs",
     )
     parser.add_argument(
         "--y-delta-multiples",
@@ -76,15 +81,15 @@ if __name__ == "__main__":
             plot_mean_flow_profile(args)
 
     elif args.function == "TKE":
-        from pyscripts.TKE import plot_TKE
+        from pyscripts.TKE_v2 import plot_TKE
         plot_TKE(args)
 
     elif args.function == "TKE_Budget":
-        from pyscripts.TKE_budget_v3 import plot_TKE_budget
+        from pyscripts.TKE_budget_v4 import plot_TKE_budget
         plot_TKE_budget(args)
 
     elif args.function == "dissipation":
-        from pyscripts.dissipation import plot_dissipation
+        from pyscripts.dissipation_v2 import plot_dissipation
         plot_dissipation(args)
 
     elif args.function == "reynolds_stresses":

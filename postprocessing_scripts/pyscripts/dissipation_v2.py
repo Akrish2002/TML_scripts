@@ -1,7 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from mpi4py import MPI
 from pathlib import Path
+import matplotlib.pyplot as plt
 import re, pathlib
 import os
 
@@ -14,8 +14,7 @@ def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
     Args:
         st (string) : The variable whose data is to be grep-ed
     
-    Return:
-        The variable's value
+    Return: The variable's value
     """
     
     text = pathlib.Path(ctr_file).read_text()
@@ -25,24 +24,25 @@ def grep_ctr(st, ctr_file="incompressible_tml.ctr"):
 
     return n
 
-def mean_flow_profile(args):
+def dissipation(args):
     T = TKE_Budget(args.case)
     T._time_step      = args.time_step
     T._stackdirection = args.stackdirection
     
     T.common_terms()
-    T._option = 1                                                       #For mean flow profile
-    T.miscellaneous()
+    T.dissipation()
 
     if T._case.rank == 0:
-        print("--Computing mean flow profile!")
+        dissipation = T._dissipation_global
+        ny  = T._ny_g
+        #Generate y at the cell centers, hardcoded for 2pi
+        y = (np.arange(ny) + 0.5) * (2*np.pi / ny)  
+
+        print("--Computing dissipation!")
 
         U_l              = 0.
         U_g              = 3.1830988618379066
         print("-- Using hardcoded U_g and U_l values!")
-        ny               = T._ny_g
-        u_avg            = T._u_avg_global
-        u_avg_normalized = np.asarray((u_avg/U_g)).squeeze()
 
         #Computing normalized time
         ctr_file        = os.path.join(args.case, "incompressible_tml.ctr")
@@ -51,43 +51,12 @@ def mean_flow_profile(args):
         ts              = args.time_step
         t_normalized    = (ts * dt * U_g)/delta_ts
 
-        #Generating y_grid
-        dy = 2 * np.pi / ny
-        print("--Using hardcoded domain size")
-        #y_grid = np.arange(0, 2 * np.pi, step)
-        y_grid = (np.arange(ny) + 0.5) * (dy)
-
-        #Finding U(x, y_0.1 & 0.9, z) 
-        print("-- The choice of constructing the similarity variable has to be justified")
-        U_01 = U_l + 0.1 * (U_g - U_l)
-        U_09 = U_l + 0.9 * (U_g - U_l)
-
-        idx  = np.where((u_avg >= U_01) & (u_avg <= U_09))
-
-        y_01 = y_grid[idx][0]
-        y_09 = y_grid[idx][-1]
-
-        delta = y_09 - y_01
-        y_bar = 0.5 * (y_09 + y_01)
-        #xi forms my new y
-        xi    = (y_grid - y_bar) / delta
-
-        #Debug
-        print("-- xi shape: ",       xi.shape)
-        print("-- delta : ",         delta)
-        print("-- y01 : ",           y_01)
-        print("-- y09 : ",           y_09)
-        print("-- y_bar : ",         y_bar)
-        print("-- y_grid shape: ",   y_grid.shape)
-    
-        #if u_avg_normalized.ndim != 1 or u_avg_normalized.shape[0] != ny:
-        #    raise ValueError(f"u_avg_normalized shape mismatch: got {u_avg_normalized.shape}, expected ({ny},)")
-        if u_avg.ndim != 1 or u_avg.shape[0] != ny:
-            raise ValueError(f"u_avg shape mismatch: got {u_avg.shape}, expected ({ny},)")
+        if dissipation.ndim != 1 or dissipation.shape[0] != ny:
+            raise ValueError(f"dissipation shape mismatch: got {dissipation.shape}, expected ({ny},)")
     
         out_path = Path(args.output_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path = out_path / f"mean_flow_profile_n{ny}_ts{int(args.time_step)}.npz"
+        out_path = out_path / f"Dissipation_n{ny}_ts{int(args.time_step)}.npz"
     
         np.savez(
                     out_path,
@@ -97,11 +66,11 @@ def mean_flow_profile(args):
                     t_normalized     =   np.float64(t_normalized),
                     ny               =   int(ny),
 
-                    y                =   xi.astype(np.float64),
-                    #u_avg_normalized =   u_avg_normalized.astype(np.float64),
-                    u_avg =   u_avg.astype(np.float64),
+                    y                =   y.astype(np.float64),
+                    dissipation      =   dissipation.astype(np.float64),
                 )
         print(f"[rank0] wrote {out_path} (ny={ny}, ts={args.time_step})")
+
 
 #------------------------------------------------------------------------------
 
@@ -117,32 +86,75 @@ def mean_flow_profile(args):
 #
 #    # tick style
 #    ax.tick_params(direction="out", length=4, width=1.0, colors="k")
+def load_xi_from_mean_flow(mean_flow_path: str, expected_ts: int, expected_ny: int):
+    d_mf = np.load(mean_flow_path, allow_pickle=True)
 
-def load_npz_mean_flow_profile(path: str):
-    U_l              = 0.
-    U_g              = 3.1830988618379066
-    d               = np.load(path, allow_pickle=True)
-    case            = str(d["case"])
+    ts_mf = int(d_mf["time_step"])
+    ny_mf = int(d_mf["ny"])
+    xi = d_mf["y"].astype(np.float64)   # In mean_flow_profile, "y" is actually xi
 
-    time_step       = int(d["time_step"])
-    t_normalized    = float(d["t_normalized"])
-    ny              = int(d["ny"])
+    if ts_mf != expected_ts:
+        raise ValueError(
+            f"Timestep mismatch: dissipation ts={expected_ts}, "
+            f"mean-flow ts={ts_mf}, file={mean_flow_path}"
+        )
 
-    xi               = d["y"].astype(np.float64)
-    u_avg            = d["u_avg"].astype(np.float64)
-    #This normalization is from pope's chapter 5
-    u_avg_normalized = u_avg / U_g - 0.5
+    if ny_mf != expected_ny:
+        raise ValueError(
+            f"ny mismatch: dissipation ny={expected_ny}, "
+            f"mean-flow ny={ny_mf}, file={mean_flow_path}"
+        )
+
+    if xi.ndim != 1 or xi.shape[0] != expected_ny:
+        raise ValueError(
+            f"xi shape mismatch: got {xi.shape}, expected ({expected_ny},)"
+        )
+
+    return xi
+
+def load_npz_dissipation(path: str, mean_flow_path: str):
+    rho_g   = 1.0
+    U_l     = 0.0
+    U_g     = 3.1830988618379066
+    delta_U = U_g - U_l
+    delta0 = (2.0 * np.pi) / 100.0
+
+    d = np.load(path, allow_pickle=True)
+    case         = str(d["case"])
+    time_step    = int(d["time_step"])
+    t_normalized = float(d["t_normalized"])
+    ny           = int(d["ny"])
+
+    dissipation = d["dissipation"].astype(np.float64)
+
+    xi = load_xi_from_mean_flow(
+        mean_flow_path=mean_flow_path,
+        expected_ts=time_step,
+        expected_ny=ny,
+    )
+
+    if dissipation.ndim != 1 or dissipation.shape[0] != ny:
+        raise ValueError(
+            f"dissipation shape mismatch: got {dissipation.shape}, expected ({ny},)"
+        )
+
+    dissipation_normalized = dissipation * delta0 / (rho_g * delta_U**3)
 
     print("xi shape: ", xi.shape)
-    print("u_avg_normalized shape: ", u_avg_normalized.shape)
+    print("dissipation shape: ", dissipation.shape)
 
-    if(u_avg_normalized.ndim != 1 or u_avg_normalized.shape != xi.shape):
-        raise ValueError(f"Size error while loading dataset, please check the generated dataset!")
+    return case, t_normalized, ny, xi, dissipation_normalized
 
-    return case, t_normalized, ny, xi, u_avg_normalized
-
-def plot_mean_flow_profile(args):
-    entries = [load_npz_mean_flow_profile(f) for f in args.inputs]                                
+def plot_dissipation(args):
+    if len(args.mean_flow_inputs) != len(args.inputs):
+        raise ValueError(
+            "--mean-flow-inputs must have the same number of files as --inputs"
+        )
+    
+    entries = [
+        load_npz_dissipation(diss_file, mf_file)
+        for diss_file, mf_file in zip(args.inputs, args.mean_flow_inputs)
+    ]
     case    = [entry[0] for entry in entries]
                                                                                 
     #Paper-style plot                                                           
@@ -151,18 +163,18 @@ def plot_mean_flow_profile(args):
     ax = fig.add_subplot(111)                                                   
     dash_cycle = ["-", ":", "--", "-.", (0, (5, 2)), (0, (3, 1, 1, 1))]
 
-    for idx, (case, t_normalized, ny, xi, u_avg_normalized) in enumerate(entries):
+    for idx, (case, t_normalized, ny, y, dissipation) in enumerate(entries):
 
         lab = (
                 args.labels[idx]
                 if args.labels and len(args.labels) == len(entries)
-                else f"$t^* = {t_normalized:.2f}$"
+                else f"$t^*={t_normalized:.2f}$"
               )
 
         #Zoom mask in this
-        x = xi
-        y = u_avg_normalized
-        if args.zoom is not None:
+        x = y
+        y = dissipation
+        if args.zoom:
             x1 = args.zoom - args.zoom_window
             x2 = args.zoom + args.zoom_window
             m = (x >= x1) & (x <= x2)
@@ -175,21 +187,29 @@ def plot_mean_flow_profile(args):
             #        linewidth=1.2, label=lab)
             ax.plot(x, y, linestyle=dash_cycle[idx % len(dash_cycle)], label=lab)
 
+        #To have path of run in the bottom of the screen
+        p = Path(case)
+        short = Path(*p.parts[-2:])
+        fig.text(
+            0.98, 0.01 + 0.025 * idx , short,
+            ha="right",
+            va="bottom",
+            fontsize=5
+        )
+
     #Labels
-    #ax.set_ylabel(r"$\langle {U} \rangle / \Delta U$", fontsize=16)
-    #ax.set_xlabel(r"$\xi$", fontsize=16)
-    ax.set_ylabel(r"$\langle {U} \rangle / \Delta U$")
+    ax.set_ylabel(r"$\varepsilon / (\frac{\rho_g \Delta U^3}{\delta_0})$")
     ax.set_xlabel(r"$\xi$")
 
     #To have path of run in the bottom of the screen
-    p = Path(case)
-    short = Path(*p.parts[-2:])
-    fig.text(
-        0.98, 0.01, short,
-        ha="right",
-        va="bottom",
-        fontsize=5
-    )
+    #p = Path(case)
+    #short = Path(*p.parts[-2:])
+    #fig.text(
+    #    0.98, 0.01, short,
+    #    ha="right",
+    #    va="bottom",
+    #    fontsize=5
+    #)
 
     if args.zoom is not None:
         ax.set_xlim(args.zoom - args.zoom_window, args.zoom + args.zoom_window)

@@ -1,7 +1,11 @@
 import matplotlib as mpl
+from cycler import cycler
 
 def paper_style():
+     defaultcolor = "r"
      mpl.rcParams.update({                                                           
+            "axes.prop_cycle": cycler(color=[defaultcolor]),
+
              # Figure                                                                
              "figure.figsize": (3.5, 2.625),                                         
                                                                                      
@@ -10,7 +14,7 @@ def paper_style():
              "font.serif"                    : ["STIXGeneral"],                      
              "axes.formatter.use_mathtext"   : True,                                 
              "mathtext.fontset"              : "cm",                                 
-             "font.size"                     : 10,                                  
+             "font.size"                     : 14,                                  
                                                                                      
              #Ticks                                                                  
              "xtick.direction"       : "in",                                         
@@ -34,8 +38,8 @@ def paper_style():
                                                                                      
              #Axis                                                                   
              "axes.linewidth"    : 1.2,                                              
-             "axes.labelsize"    : 10,                                               
-             "axes.titlesize"    : 8,                                                
+             "axes.labelsize"    : 14,                                               
+             "axes.titlesize"    : 14,                                                
              "axes.grid"         : True,                                             
              "axes.axisbelow"    : True,                                             
              "axes.edgecolor"    : "k",                                              
@@ -53,7 +57,7 @@ def paper_style():
              "legend.edgecolor"  : "none",                                           
              "legend.numpoints"  : 1,                                                
              "legend.loc"        : "best",                                           
-             "legend.fontsize"   : 8,                                                
+             "legend.fontsize"   : 10,                                                
                                                                                      
              #Saving                                                                 
              "savefig.bbox"      : "tight",                                          
